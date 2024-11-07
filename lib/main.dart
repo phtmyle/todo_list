@@ -14,7 +14,9 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider<TodoListViewModel>(
-      create: (_) => TodoListViewModel([]),
+      // create: (_) => TodoListViewModel([]),
+      create: (_) => TodoListViewModel(),
+
       // Pass an empty list or initial list of todos
       child: MaterialApp(
         title: 'Flutter Demo',

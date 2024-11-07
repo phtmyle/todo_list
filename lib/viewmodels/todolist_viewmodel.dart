@@ -1,17 +1,40 @@
-import 'package:flutter/foundation.dart';
+import 'package:flutter/cupertino.dart';
 
 import '../models/todo.dart';
 
 class TodoListViewModel extends ChangeNotifier {
   final List<Todo> _todos;
 
-  TodoListViewModel(this._todos);
+  // TodoListViewModel(this._todos);
+  TodoListViewModel()
+      : _todos = [
+          Todo(
+            id: '1',
+            title: 'Complete project report',
+            dueDate: DateTime.now().add(const Duration(days: 1)),
+            remindMe: true,
+            isCompleted: false,
+          ),
+          Todo(
+            id: '2',
+            title: 'Buy groceries',
+            dueDate: DateTime.now().add(const Duration(days: 2)),
+            remindMe: false,
+            isCompleted: false,
+          ),
+          Todo(
+            id: '3',
+            title: 'Attend team meeting',
+            dueDate: DateTime.now().add(const Duration(hours: 3)),
+            remindMe: true,
+            isCompleted: true,
+          ),
+        ];
 
   List<Todo> getTodos() {
     return _todos;
   }
 
-  // Get todos by category
   List<Todo> getTodosByCategory(String category) {
     DateTime now = DateTime.now();
     DateTime tomorrow = now.add(const Duration(days: 1));
@@ -45,25 +68,25 @@ class TodoListViewModel extends ChangeNotifier {
     }
   }
 
-  // Add a new todo
   void addTodo(Todo todo) {
     _todos.add(todo);
+    notifyListeners();
   }
 
-  // Remove a todo
   void removeTodo(String id) {
     _todos.removeWhere((todo) => todo.id == id);
+    notifyListeners();
   }
 
-  // Mark a todo as completed
   void completeTodo(String id) {
     final todo = _todos.firstWhere((todo) => todo.id == id);
     todo.isCompleted = true;
+    notifyListeners();
   }
-    // Update the status of a todo
+
   void updateTodoStatus(String id, bool isCompleted) {
     final todo = _todos.firstWhere((todo) => todo.id == id);
     todo.isCompleted = isCompleted;
-    notifyListeners(); // Notify listeners to update the UI
+    notifyListeners();
   }
 }

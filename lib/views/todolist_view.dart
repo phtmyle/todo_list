@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:intl/intl.dart';
-import 'package:todo_list/extensions/string_extensions.dart';
 import 'package:todo_list/services/notification_service.dart';
 
 import '../models/repeat_frequency.dart';
@@ -17,25 +16,27 @@ class TodoListView extends StatefulWidget {
   TodoListViewState createState() => TodoListViewState();
 }
 
-class TodoListViewState extends State<TodoListView>
-    with TickerProviderStateMixin {
+class TodoListViewState extends State<TodoListView> {
   String selectedCategory = 'All';
   TextEditingController searchController = TextEditingController();
   final NotificationService notificationService = NotificationService();
   bool isCompletedTasksExpanded = false;
-  final Map<String, AnimationController> _animationControllers = {};
 
   @override
   void initState() {
     super.initState();
+    searchController.addListener(_onSearchChanged);
   }
 
   @override
   void dispose() {
-    _animationControllers.forEach((key, controller) {
-      controller.dispose();
-    });
+    searchController.removeListener(_onSearchChanged);
+    searchController.dispose();
     super.dispose();
+  }
+
+  void _onSearchChanged() {
+    setState(() {});
   }
 
   void _addTodo() {
@@ -66,19 +67,6 @@ class TodoListViewState extends State<TodoListView>
   void _toggleTodoCompletion(Todo todo) {
     setState(() {
       todo.isCompleted = !todo.isCompleted;
-
-      if (!_animationControllers.containsKey(todo.id)) {
-        _animationControllers[todo.id] = AnimationController(
-          vsync: this,
-          duration: const Duration(milliseconds: 300),
-        );
-      }
-
-      if (todo.isCompleted) {
-        _animationControllers[todo.id]!.forward();
-      } else {
-        _animationControllers[todo.id]!.reverse();
-      }
     });
   }
 
@@ -91,13 +79,11 @@ class TodoListViewState extends State<TodoListView>
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Pending Task',
+        title: const Text('Todo List',
             style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
         backgroundColor: const Color(0xFF5C6BC0),
         elevation: 0,
-        leading: const Icon(Icons.arrow_back),
         actions: const [
-          Icon(Icons.person_add_alt, size: 28),
           SizedBox(width: 12),
           Icon(Icons.more_vert, size: 28),
           SizedBox(width: 12),
@@ -129,7 +115,6 @@ class TodoListViewState extends State<TodoListView>
                             key: Key(todo.id),
                             direction: DismissDirection.horizontal,
                             onDismissed: (direction) {
-                              // Toggle the completion state of the todo
                               _toggleTodoCompletion(todo);
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
@@ -153,53 +138,31 @@ class TodoListViewState extends State<TodoListView>
                                 child: Icon(Icons.delete, color: Colors.white),
                               ),
                             ),
-                            child: ScaleTransition(
-                              scale: Tween<double>(
-                                begin: 0.8,
-                                end: 1.0,
-                              ).animate(CurvedAnimation(
-                                parent: _animationControllers[todo.id] ??
-                                    AnimationController(
-                                      vsync: this,
-                                      duration:
-                                          const Duration(milliseconds: 300),
-                                    )
-                                  ..forward(),
-                                curve: Curves.easeInOut,
-                              )),
-                              child: RotationTransition(
-                                turns: Tween<double>(
-                                  begin: 0.1,
-                                  end: 0.0,
-                                ).animate(CurvedAnimation(
-                                  parent: _animationControllers[todo.id] ??
-                                      AnimationController(
-                                        vsync: this,
-                                        duration:
-                                            const Duration(milliseconds: 300),
-                                      )
-                                    ..forward(),
-                                  curve: Curves.easeInOut,
-                                )),
-                                child: Card(
-                                  margin:
-                                      const EdgeInsets.symmetric(vertical: 8),
-                                  child: ListTile(
-                                    leading: GestureDetector(
-                                      onTap: () => _toggleTodoCompletion(todo),
-                                      child: Icon(
-                                        todo.isCompleted
-                                            ? Icons.check_circle
-                                            : Icons.radio_button_unchecked,
-                                        color: todo.isCompleted
-                                            ? Colors.blue
-                                            : Colors.grey,
-                                      ),
+                            child: AnimatedSwitcher(
+                              duration: const Duration(milliseconds: 300),
+                              transitionBuilder:
+                                  (Widget child, Animation<double> animation) {
+                                return FadeTransition(
+                                    opacity: animation, child: child);
+                              },
+                              child: Card(
+                                key: ValueKey(todo.isCompleted),
+                                margin: const EdgeInsets.symmetric(vertical: 8),
+                                child: ListTile(
+                                  leading: GestureDetector(
+                                    onTap: () => _toggleTodoCompletion(todo),
+                                    child: Icon(
+                                      todo.isCompleted
+                                          ? Icons.check_circle
+                                          : Icons.radio_button_unchecked,
+                                      color: todo.isCompleted
+                                          ? Colors.blue
+                                          : Colors.grey,
                                     ),
-                                    title: Text(todo.title),
-                                    trailing: const Icon(Icons.star_border,
-                                        color: Colors.grey),
                                   ),
+                                  title: Text(todo.title),
+                                  trailing: const Icon(Icons.star_border,
+                                      color: Colors.grey),
                                 ),
                               ),
                             ),
@@ -248,57 +211,35 @@ class TodoListViewState extends State<TodoListView>
                               if (isCompletedTasksExpanded)
                                 Column(
                                   children: completedTodos.map((todo) {
-                                    return ScaleTransition(
-                                      scale: Tween<double>(
-                                        begin: 0.8,
-                                        end: 1.0,
-                                      ).animate(CurvedAnimation(
-                                        parent:
-                                            _animationControllers[todo.id] ??
-                                                AnimationController(
-                                                  vsync: this,
-                                                  duration: const Duration(
-                                                      milliseconds: 300),
-                                                )
-                                              ..forward(),
-                                        curve: Curves.easeInOut,
-                                      )),
-                                      child: RotationTransition(
-                                        turns: Tween<double>(
-                                          begin: 0.1,
-                                          end: 0.0,
-                                        ).animate(CurvedAnimation(
-                                          parent:
-                                              _animationControllers[todo.id] ??
-                                                  AnimationController(
-                                                    vsync: this,
-                                                    duration: const Duration(
-                                                        milliseconds: 300),
-                                                  )
-                                                ..forward(),
-                                          curve: Curves.easeInOut,
-                                        )),
-                                        child: Card(
-                                          margin: const EdgeInsets.symmetric(
-                                              vertical: 8),
-                                          child: ListTile(
-                                            leading: const Icon(
-                                                Icons.check_circle,
-                                                color: Color(0xFF5C6BC0)),
-                                            title: Text(
-                                              todo.title,
-                                              style: const TextStyle(
-                                                decoration:
-                                                    TextDecoration.lineThrough,
-                                                color: Colors.grey,
-                                              ),
+                                    return AnimatedSwitcher(
+                                      duration:
+                                          const Duration(milliseconds: 300),
+                                      transitionBuilder: (Widget child,
+                                          Animation<double> animation) {
+                                        return FadeTransition(
+                                            opacity: animation, child: child);
+                                      },
+                                      child: Card(
+                                        key: ValueKey(todo.isCompleted),
+                                        margin: const EdgeInsets.symmetric(
+                                            vertical: 8),
+                                        child: ListTile(
+                                          leading: const Icon(
+                                              Icons.check_circle,
+                                              color: Color(0xFF5C6BC0)),
+                                          title: Text(
+                                            todo.title,
+                                            style: const TextStyle(
+                                              decoration:
+                                                  TextDecoration.lineThrough,
+                                              color: Colors.grey,
                                             ),
-                                            trailing: const Icon(
-                                                Icons.star_border,
-                                                color: Colors.grey),
-                                            onTap: () =>
-                                                _toggleTodoCompletion(todo),
                                           ),
+                                          trailing: const Icon(
+                                              Icons.star_border,
+                                              color: Colors.grey),
+                                          onTap: () =>
+                                              _toggleTodoCompletion(todo),
                                         ),
                                       ),
                                     );
@@ -332,7 +273,7 @@ class AddTodoBottomSheet extends StatefulWidget {
   const AddTodoBottomSheet({super.key, required this.onAdd});
 
   @override
-  _AddTodoBottomSheetState createState() => _AddTodoBottomSheetState();
+  State<AddTodoBottomSheet> createState() => _AddTodoBottomSheetState();
 }
 
 class _AddTodoBottomSheetState extends State<AddTodoBottomSheet> {
@@ -373,7 +314,8 @@ class _AddTodoBottomSheetState extends State<AddTodoBottomSheet> {
       ),
       padding: const EdgeInsets.all(16.0),
       child: SingleChildScrollView(
-        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+        padding:
+            EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -466,12 +408,11 @@ class _AddTodoBottomSheetState extends State<AddTodoBottomSheet> {
                     },
                   ),
                   const SizedBox(width: 16),
-                  _RepeatControl(
-                    repeat: repeat,
-                    onChanged: (newValue) {
-                      setState(() {
-                        repeat = newValue!;
-                      });
+                  RepeatControl(
+                    onChanged: (selectedOption) {
+                      // Handle the selected repeat option here
+                      print(
+                          'Selected Repeat Option: ${selectedOption?.displayText}');
                     },
                   ),
                 ],
@@ -508,7 +449,6 @@ class _AddTodoBottomSheetState extends State<AddTodoBottomSheet> {
             pickedTime.minute,
           );
         });
-        print('Reminder set for ${reminderDate.toString()}');
       }
     }
   }
@@ -561,6 +501,7 @@ class _DueDateControl extends StatelessWidget {
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        height: 40,
         decoration: BoxDecoration(
           color: dueDate != null
               ? const Color(0xFF5D70BD)
@@ -577,7 +518,7 @@ class _DueDateControl extends StatelessWidget {
             Text(
               dueDate != null
                   ? 'Due ${dueDate!.toLocal().toString().split(' ')[0]}' // Display date
-                  : 'Set due date', // Placeholder text
+                  : 'Add due date', // Placeholder text
               style: TextStyle(
                 color:
                     dueDate != null ? Colors.white : Colors.grey, // Text color
@@ -610,6 +551,7 @@ class _ReminderControl extends StatelessWidget {
       onTap: () => onToggle(!remindMe),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        height: 40,
         decoration: BoxDecoration(
           color: remindMe ? const Color(0xFF5D70BD) : Colors.grey[200],
           borderRadius: BorderRadius.circular(12),
@@ -617,7 +559,11 @@ class _ReminderControl extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.notifications, size: 24, color: Colors.white),
+            Icon(
+              Icons.notifications,
+              size: 24,
+              color: remindMe ? Colors.white : Colors.grey, // Mimic color logic
+            ),
             const SizedBox(width: 8),
             GestureDetector(
               onTap: () {
@@ -638,7 +584,7 @@ class _ReminderControl extends StatelessWidget {
     );
   }
 
-void _showPopupMenu(BuildContext context) {
+  void _showPopupMenu(BuildContext context) {
     RenderBox renderBox = context.findRenderObject() as RenderBox;
     Offset offset = renderBox.localToGlobal(Offset.zero);
 
@@ -658,10 +604,10 @@ void _showPopupMenu(BuildContext context) {
         _buildPopupMenuItem(ReminderOption.laterToday),
         _buildPopupMenuItem(ReminderOption.tomorrow, tomorrow),
         _buildPopupMenuItem(ReminderOption.nextWeek, nextWeek),
-         const PopupMenuDivider(), 
+        const PopupMenuDivider(),
         _buildPopupMenuItem(ReminderOption.pickDateTime),
       ],
-      color: Colors.white, 
+      color: Colors.white,
     ).then((value) {
       if (value != null) {
         onSelectReminder(value);
@@ -670,7 +616,7 @@ void _showPopupMenu(BuildContext context) {
   }
 
 // Method to build a PopupMenuItem
- PopupMenuItem<ReminderOption> _buildPopupMenuItem(ReminderOption option,
+  PopupMenuItem<ReminderOption> _buildPopupMenuItem(ReminderOption option,
       [DateTime? date]) {
     return PopupMenuItem<ReminderOption>(
       value: option,
@@ -693,97 +639,6 @@ void _showPopupMenu(BuildContext context) {
       ),
     );
   }
-
-  Widget getIconForReminder(ReminderOption option) {
-    switch (option) {
-      case ReminderOption.laterToday:
-        return const Icon(Icons.update); // Material icon
-      case ReminderOption.tomorrow:
-        return const Icon(Icons.arrow_circle_right_outlined); // Material icon
-      case ReminderOption.nextWeek:
-        return SvgPicture.asset(
-          'assets/icons/double-right-sign-circle-svgrepo-com.svg', // Update the path as necessary
-          width: 24, // Set the desired width
-          height: 24, // Set the desired height
-        );
-      case ReminderOption.pickDateTime:
-        return const Icon(Icons.date_range); // Material icon
-      default:
-        return const SizedBox(); // Return an empty widget for default case
-    }
-  }
-}
-
-// Repeat Control Widget
-class _RepeatControl extends StatelessWidget {
-  final RepeatFrequency repeat;
-  final ValueChanged<RepeatFrequency?> onChanged;
-
-  const _RepeatControl({required this.repeat, required this.onChanged});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        _showRepeatOptions(context);
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: repeat == RepeatFrequency.none
-              ? Colors.grey[200]
-              : const Color(0xFF5D70BD), // Background color
-          borderRadius: BorderRadius.circular(12), // Rounded corners
-        ),
-        child: Row(
-          children: [
-            Icon(Icons.repeat,
-                size: 24,
-                color: repeat == RepeatFrequency.none
-                    ? Colors.grey
-                    : Colors.white), // Icon color
-            const SizedBox(width: 8),
-            Text(
-              repeat == RepeatFrequency.none
-                  ? 'Repeat' // Placeholder text
-                  : repeat.toString().split('.').last.capitalize(),
-              style: TextStyle(
-                color: repeat == RepeatFrequency.none
-                    ? Colors.grey
-                    : Colors.white, // Text color
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showRepeatOptions(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Select Repeat Frequency'),
-          content: SingleChildScrollView(
-            child: ListBody(
-              children: RepeatFrequency.values.map((frequency) {
-                return ListTile(
-                  title: Text(frequency == RepeatFrequency.none
-                      ? 'No Repeat'
-                      : frequency.toString().split('.').last.capitalize()),
-                  onTap: () {
-                    onChanged(frequency);
-                    Navigator.of(context).pop();
-                  },
-                );
-              }).toList(),
-            ),
-          ),
-        );
-      },
-    );
-  }
 }
 
 enum ReminderOption {
@@ -804,6 +659,159 @@ extension ReminderOptionExtension on ReminderOption {
         return 'Next week';
       case ReminderOption.pickDateTime:
         return 'Pick a date & time';
+    }
+  }
+}
+
+Widget getIconForReminder(ReminderOption option) {
+  switch (option) {
+    case ReminderOption.laterToday:
+      return const Icon(Icons.update); // Material icon
+    case ReminderOption.tomorrow:
+      return const Icon(Icons.arrow_circle_right_outlined); // Material icon
+    case ReminderOption.nextWeek:
+      return SvgPicture.asset(
+        'assets/icons/double-right-sign-circle-svgrepo-com.svg', // Update the path as necessary
+        width: 24, // Set the desired width
+        height: 24, // Set the desired height
+      );
+    case ReminderOption.pickDateTime:
+      return const Icon(Icons.date_range); // Material icon
+    default:
+      return const SizedBox(); // Return an empty widget for default case
+  }
+}
+
+// Repeat Control Widget
+class RepeatControl extends StatefulWidget {
+  final ValueChanged<RepeatOption?>
+      onChanged; // Callback for when the option changes
+
+  const RepeatControl({super.key, required this.onChanged}); // Constructor
+
+  @override
+  State<RepeatControl> createState() => _RepeatControlState();
+}
+
+class _RepeatControlState extends State<RepeatControl> {
+  RepeatOption? _selectedOption; // State variable to hold the selected option
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        height: 40,
+        decoration: BoxDecoration(
+          color: _selectedOption != null
+              ? const Color(0xFF5D70BD)
+              : Colors.grey[200],
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SvgPicture.asset(
+              'assets/icons/repeat_solid.svg',
+              width: 24, // Match icon size
+              height: 24, // Match icon size
+              colorFilter: ColorFilter.mode(
+                _selectedOption != null
+                    ? Colors.white
+                    : Colors.grey, // Mimic color logic
+                BlendMode.srcIn,
+              ),
+            ),
+            const SizedBox(width: 8),
+            GestureDetector(
+              onTap: () {
+                _showRepeatOptions(context);
+              },
+              child: Text(
+                _selectedOption?.displayText ?? 'Repeat',
+                style: TextStyle(
+                  color: _selectedOption != null ? Colors.white : Colors.grey,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showRepeatOptions(BuildContext context) {
+    showMenu<RepeatOption>(
+      context: context,
+      position: const RelativeRect.fromLTRB(
+          100, 100, 0, 0), // Adjust position as needed
+      items: [
+        _buildPopupMenuItem(RepeatOption.daily),
+        _buildPopupMenuItem(RepeatOption.weekly),
+        _buildPopupMenuItem(RepeatOption.monthly),
+        _buildPopupMenuItem(RepeatOption.yearly),
+      ],
+      color: Colors.white,
+    ).then((value) {
+      if (value != null) {
+        setState(() {
+          _selectedOption = value; // Update the selected option
+        });
+        widget.onChanged(value); // Call the onChanged callback
+      }
+    });
+  }
+
+  PopupMenuItem<RepeatOption> _buildPopupMenuItem(RepeatOption option) {
+    return PopupMenuItem<RepeatOption>(
+      value: option,
+      child: Row(
+        children: [
+          getIconForRepeat(option), // Use the method to get the icon
+          const SizedBox(width: 8),
+          Text(option.displayText),
+        ],
+      ),
+    );
+  }
+
+  // Method to get the icon for each repeat option
+  Widget getIconForRepeat(RepeatOption option) {
+    switch (option) {
+      case RepeatOption.daily:
+        return const Icon(Icons.wb_sunny); // Sun icon for Daily
+      case RepeatOption.weekly:
+        return const Icon(
+            Icons.calendar_view_week); // Weekly view calendar icon
+      case RepeatOption.monthly:
+        return const Icon(Icons.calendar_today); // Calendar icon for Monthly
+      case RepeatOption.yearly:
+        return const Icon(Icons.event); // Event icon for Yearly
+      default:
+        return const SizedBox(); // Return an empty widget for default case
+    }
+  }
+}
+
+enum RepeatOption {
+  daily,
+  weekly,
+  monthly,
+  yearly,
+}
+
+// Extension for the RepeatOption enum
+extension RepeatOptionExtension on RepeatOption {
+  String get displayText {
+    switch (this) {
+      case RepeatOption.daily:
+        return 'Daily';
+      case RepeatOption.weekly:
+        return 'Weekly';
+      case RepeatOption.monthly:
+        return 'Monthly';
+      case RepeatOption.yearly:
+        return 'Yearly';
     }
   }
 }
