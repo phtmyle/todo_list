@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/svg.dart';
+import 'package:intl/intl.dart';
 import 'package:todo_list/extensions/string_extensions.dart';
 import 'package:todo_list/services/notification_service.dart';
 
@@ -244,7 +244,7 @@ class TodoListViewState extends State<TodoListView>
                                 ),
                               ),
                               const SizedBox(height: 8),
-                              if (isCompletedTasksExpanded) // Show completed tasks only if expanded
+                              if (isCompletedTasksExpanded)
                                 Column(
                                   children: completedTodos.map((todo) {
                                     return ScaleTransition(
@@ -338,6 +338,7 @@ class _AddTodoBottomSheetState extends State<AddTodoBottomSheet> {
   String title = '';
   DateTime? dueDate;
   bool remindMe = false;
+  DateTime? reminderDate;
   RepeatFrequency repeat = RepeatFrequency.none;
 
   Future<void> _selectDate(BuildContext context) async {
@@ -371,17 +372,50 @@ class _AddTodoBottomSheetState extends State<AddTodoBottomSheet> {
       ),
       padding: const EdgeInsets.all(16.0),
       child: SingleChildScrollView(
+        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _TaskTitleField(onChanged: (value) => title = value),
-            const Divider(thickness: 1, color: Colors.grey),
+            Row(
+              children: [
+                _TaskTitleField(
+                  onChanged: (value) {
+                    setState(() {
+                      title = value; // Update title
+                    });
+                  },
+                ),
+                const SizedBox(width: 8),
+                // Floating Action Button
+                GestureDetector(
+                  onTap: () {
+                    if (title.isNotEmpty) {
+                      widget.onAdd(title, dueDate, remindMe, repeat);
+                      Navigator.of(context).pop();
+                    }
+                  },
+                  child: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: title.isEmpty
+                          ? const Color(0xFFC2C2C2)
+                          : const Color(0xFF2665EE), // Color based on input
+                    ),
+                    child: const Icon(Icons.arrow_upward,
+                        color: Colors.white), // Up arrow icon
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: 16),
             // Scrollable Row for Controls
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                mainAxisAlignment:
+                    MainAxisAlignment.start, // Align items to the start
                 children: [
                   _DueDateControl(
                     dueDate: dueDate,
@@ -394,6 +428,40 @@ class _AddTodoBottomSheetState extends State<AddTodoBottomSheet> {
                       setState(() {
                         remindMe = value;
                       });
+                    },
+                    reminderDate: reminderDate, // Pass reminder date
+                    onSelectReminder: (option) {
+                      switch (option) {
+                        case ReminderOption.laterToday:
+                          // Set reminder for later today
+                          setState(() {
+                            reminderDate = DateTime.now().add(const Duration(
+                                hours: 2)); // Example: 2 hours from now
+                          });
+                          break;
+                        case ReminderOption.tomorrow:
+                          // Set reminder for tomorrow
+                          setState(() {
+                            reminderDate = DateTime.now()
+                                .add(const Duration(days: 1))
+                                .copyWith(
+                                    hour: 9, minute: 0); // Tomorrow at 9:00 AM
+                          });
+                          break;
+                        case ReminderOption.nextWeek:
+                          // Set reminder for next week
+                          setState(() {
+                            reminderDate = DateTime.now()
+                                .add(const Duration(days: 7))
+                                .copyWith(
+                                    hour: 9, minute: 0); // Next week at 9:00 AM
+                          });
+                          break;
+                        case ReminderOption.pickDateTime:
+                          // Handle picking a date and time
+                          _selectDateTime(context);
+                          break;
+                      }
                     },
                   ),
                   const SizedBox(width: 16),
@@ -408,28 +476,40 @@ class _AddTodoBottomSheetState extends State<AddTodoBottomSheet> {
                 ],
               ),
             ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () {
-                if (title.isNotEmpty) {
-                  widget.onAdd(title, dueDate, remindMe, repeat);
-                  Navigator.of(context).pop();
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue,
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-              child:
-                  const Text('Add Task', style: TextStyle(color: Colors.white)),
-            ),
           ],
         ),
       ),
     );
+  }
+
+  // Method to pick a date and time
+  Future<void> _selectDateTime(BuildContext context) async {
+    DateTime? pickedDate = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime.now(),
+      lastDate: DateTime(2101),
+    );
+
+    if (pickedDate != null) {
+      TimeOfDay? pickedTime = await showTimePicker(
+        context: context,
+        initialTime: TimeOfDay.now(),
+      );
+
+      if (pickedTime != null) {
+        setState(() {
+          reminderDate = DateTime(
+            pickedDate.year,
+            pickedDate.month,
+            pickedDate.day,
+            pickedTime.hour,
+            pickedTime.minute,
+          );
+        });
+        print('Reminder set for ${reminderDate.toString()}');
+      }
+    }
   }
 }
 
@@ -437,23 +517,32 @@ class _AddTodoBottomSheetState extends State<AddTodoBottomSheet> {
 class _TaskTitleField extends StatelessWidget {
   final ValueChanged<String> onChanged;
 
-  const _TaskTitleField({Key? key, required this.onChanged}) : super(key: key);
+  const _TaskTitleField({required this.onChanged});
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: TextField(
-            decoration: InputDecoration(
-              hintText: 'Add a task',
-              border: InputBorder.none,
-              hintStyle: TextStyle(color: Colors.grey[400]),
-            ),
-            onChanged: onChanged,
+    return Expanded(
+      child: Row(
+        children: [
+          // Circular Icon
+          const SizedBox(
+            width: 40,
+            height: 40,
+            child: Icon(Icons.circle_outlined, color: Color(0xFFEEEEEE)),
           ),
-        ),
-      ],
+          const SizedBox(width: 8),
+          Expanded(
+            child: TextField(
+              decoration: InputDecoration(
+                hintText: 'Add a task',
+                border: InputBorder.none,
+                hintStyle: TextStyle(color: Colors.grey[300]),
+              ),
+              onChanged: onChanged,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -463,26 +552,38 @@ class _DueDateControl extends StatelessWidget {
   final DateTime? dueDate;
   final VoidCallback onTap;
 
-  const _DueDateControl({Key? key, required this.dueDate, required this.onTap})
-      : super(key: key);
+  const _DueDateControl({required this.dueDate, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Row(
-        children: [
-          const Icon(Icons.calendar_today, size: 24, color: Color(0xFF8C8C8C)),
-          const SizedBox(width: 8),
-          Text(
-            dueDate != null
-                ? '${dueDate!.toLocal()}'.split(' ')[0]
-                : 'Set due date',
-            style: TextStyle(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: dueDate != null
+              ? const Color(0xFF5D70BD)
+              : Colors.grey[200], // Background color
+          borderRadius: BorderRadius.circular(12), // Rounded corners
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.calendar_today,
+                size: 24,
                 color:
-                    dueDate != null ? Colors.black : const Color(0xFF8C8C8C)),
-          ),
-        ],
+                    dueDate != null ? Colors.white : Colors.grey), // Icon color
+            const SizedBox(width: 8),
+            Text(
+              dueDate != null
+                  ? 'Due ${dueDate!.toLocal().toString().split(' ')[0]}' // Display date
+                  : 'Set due date', // Placeholder text
+              style: TextStyle(
+                color:
+                    dueDate != null ? Colors.white : Colors.grey, // Text color
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -491,28 +592,120 @@ class _DueDateControl extends StatelessWidget {
 // Reminder Control Widget
 class _ReminderControl extends StatelessWidget {
   final bool remindMe;
+  final DateTime? reminderDate;
   final ValueChanged<bool> onToggle;
+  final ValueChanged<ReminderOption> onSelectReminder;
 
-  const _ReminderControl(
-      {Key? key, required this.remindMe, required this.onToggle})
-      : super(key: key);
+  const _ReminderControl({
+    required this.remindMe,
+    required this.reminderDate,
+    required this.onToggle,
+    required this.onSelectReminder,
+  });
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () => onToggle(!remindMe),
-      child: Row(
-        children: [
-          const Icon(Icons.notifications, size: 24, color: Color(0xFF8C8C8C)),
-          const SizedBox(width: 8),
-          Text(
-            remindMe ? 'Remind me' : 'No reminder',
-            style: TextStyle(
-                color: remindMe ? Colors.black : const Color(0xFF8C8C8C)),
-          ),
-        ],
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: remindMe ? const Color(0xFF5D70BD) : Colors.grey[200],
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.notifications, size: 24, color: Colors.white),
+            const SizedBox(width: 8),
+            GestureDetector(
+              onTap: () {
+                _showPopupMenu(context);
+              },
+              child: Text(
+                remindMe
+                    ? 'Remind me at ${reminderDate?.toLocal().toString().split(' ')[0]}'
+                    : 'Remind me',
+                style: TextStyle(
+                  color: remindMe ? Colors.white : Colors.grey,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
+  }
+
+void _showPopupMenu(BuildContext context) {
+    RenderBox renderBox = context.findRenderObject() as RenderBox;
+    Offset offset = renderBox.localToGlobal(Offset.zero);
+
+    double x = offset.dx;
+    double y = offset.dy + renderBox.size.height; // Position below the widget
+
+    // Get the current date
+    DateTime now = DateTime.now();
+    DateTime tomorrow = now.add(const Duration(days: 1));
+    DateTime nextWeek = now.add(const Duration(days: 7));
+
+    // Show the menu
+    showMenu<ReminderOption>(
+      context: context,
+      position: RelativeRect.fromLTRB(x, y, 0, 0),
+      items: [
+        PopupMenuItem<ReminderOption>(
+          value: ReminderOption.laterToday,
+          child: Row(
+            children: [
+              Icon(ReminderOption.laterToday.icon, color: Colors.black),
+              const SizedBox(width: 8),
+              Text(ReminderOption.laterToday.displayText),
+            ],
+          ),
+        ),
+        PopupMenuItem<ReminderOption>(
+          value: ReminderOption.tomorrow,
+          child: Row(
+            children: [
+              Icon(ReminderOption.tomorrow.icon, color: Colors.black),
+              const SizedBox(width: 8),
+              Text(ReminderOption.tomorrow.displayText),
+              const Spacer(),
+              Text(DateFormat('EEE, h:mm a').format(tomorrow),
+                  style: const TextStyle(color: Colors.grey)),
+            ],
+          ),
+        ),
+        PopupMenuItem<ReminderOption>(
+          value: ReminderOption.nextWeek,
+          child: Row(
+            children: [
+              Icon(ReminderOption.nextWeek.icon, color: Colors.black),
+              const SizedBox(width: 8),
+              Text(ReminderOption.nextWeek.displayText),
+              const Spacer(),
+              Text(DateFormat('EEE, h:mm a').format(nextWeek),
+                  style: const TextStyle(color: Colors.grey)),
+            ],
+          ),
+        ),
+        PopupMenuItem<ReminderOption>(
+          value: ReminderOption.pickDateTime,
+          child: Row(
+            children: [
+              Icon(ReminderOption.pickDateTime.icon, color: Colors.black),
+              const SizedBox(width: 8),
+              Text(ReminderOption.pickDateTime.displayText),
+            ],
+          ),
+        ),
+      ],
+    ).then((value) {
+      if (value != null) {
+        onSelectReminder(value);
+      }
+    });
   }
 }
 
@@ -521,50 +714,104 @@ class _RepeatControl extends StatelessWidget {
   final RepeatFrequency repeat;
   final ValueChanged<RepeatFrequency?> onChanged;
 
-  const _RepeatControl(
-      {super.key, required this.repeat, required this.onChanged});
+  const _RepeatControl({required this.repeat, required this.onChanged});
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        // Open a dialog or dropdown to select repeat frequency
-        // This can be customized as per your requirement
+        _showRepeatOptions(context);
       },
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8.0), // Padding around the icon
-            decoration: BoxDecoration(
-              color: Colors.white, // Background color
-              borderRadius: BorderRadius.circular(12), // Rounded corners
-              boxShadow: const [
-                BoxShadow(
-                  color: Colors.black26,
-                  blurRadius: 4,
-                  offset: Offset(0, 2),
-                ),
-              ],
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: repeat == RepeatFrequency.none
+              ? Colors.grey[200]
+              : const Color(0xFF5D70BD), // Background color
+          borderRadius: BorderRadius.circular(12), // Rounded corners
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.repeat,
+                size: 24,
+                color: repeat == RepeatFrequency.none
+                    ? Colors.grey
+                    : Colors.white), // Icon color
+            const SizedBox(width: 8),
+            Text(
+              repeat == RepeatFrequency.none
+                  ? 'Repeat' // Placeholder text
+                  : repeat.toString().split('.').last.capitalize(),
+              style: TextStyle(
+                color: repeat == RepeatFrequency.none
+                    ? Colors.grey
+                    : Colors.white, // Text color
+              ),
             ),
-            child: SvgPicture.asset(
-              'assets/icons/repeat_solid.svg', // Path to your SVG file
-              color: const Color(0xFF8C8C8C),
-              // Set the color to match other controls
-              height: 24,
-              // Adjust height as needed
-              width: 24, // Adjust width as needed
-            ),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            repeat == RepeatFrequency.none
-                ? 'Repeat'
-                : repeat.toString().split('.').last.capitalize(),
-            style: const TextStyle(
-                color: Color(0xFF8C8C8C), fontSize: 16), // Adjusted font size
-          ),
-        ],
+          ],
+        ),
       ),
     );
+  }
+
+  void _showRepeatOptions(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Select Repeat Frequency'),
+          content: SingleChildScrollView(
+            child: ListBody(
+              children: RepeatFrequency.values.map((frequency) {
+                return ListTile(
+                  title: Text(frequency == RepeatFrequency.none
+                      ? 'No Repeat'
+                      : frequency.toString().split('.').last.capitalize()),
+                  onTap: () {
+                    onChanged(frequency);
+                    Navigator.of(context).pop();
+                  },
+                );
+              }).toList(),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+enum ReminderOption {
+  laterToday,
+  tomorrow,
+  nextWeek,
+  pickDateTime,
+}
+
+extension ReminderOptionExtension on ReminderOption {
+  String get displayText {
+    switch (this) {
+      case ReminderOption.laterToday:
+        return 'Later today';
+      case ReminderOption.tomorrow:
+        return 'Tomorrow';
+      case ReminderOption.nextWeek:
+        return 'Next week';
+      case ReminderOption.pickDateTime:
+        return 'Pick a date & time';
+    }
+  }
+
+  IconData get icon {
+    switch (this) {
+      case ReminderOption.laterToday:
+        return Icons.access_time;
+      case ReminderOption.tomorrow:
+        return Icons.calendar_today;
+      case ReminderOption.nextWeek:
+        return Icons.calendar_view_week;
+      case ReminderOption.pickDateTime:
+        return Icons.date_range;
+    }
   }
 }
