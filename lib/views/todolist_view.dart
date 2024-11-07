@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:intl/intl.dart';
 import 'package:todo_list/extensions/string_extensions.dart';
 import 'package:todo_list/services/notification_service.dart';
@@ -654,58 +655,62 @@ void _showPopupMenu(BuildContext context) {
       context: context,
       position: RelativeRect.fromLTRB(x, y, 0, 0),
       items: [
-        PopupMenuItem<ReminderOption>(
-          value: ReminderOption.laterToday,
-          child: Row(
-            children: [
-              Icon(ReminderOption.laterToday.icon, color: Colors.black),
-              const SizedBox(width: 8),
-              Text(ReminderOption.laterToday.displayText),
-            ],
-          ),
-        ),
-        PopupMenuItem<ReminderOption>(
-          value: ReminderOption.tomorrow,
-          child: Row(
-            children: [
-              Icon(ReminderOption.tomorrow.icon, color: Colors.black),
-              const SizedBox(width: 8),
-              Text(ReminderOption.tomorrow.displayText),
-              const Spacer(),
-              Text(DateFormat('EEE, h:mm a').format(tomorrow),
-                  style: const TextStyle(color: Colors.grey)),
-            ],
-          ),
-        ),
-        PopupMenuItem<ReminderOption>(
-          value: ReminderOption.nextWeek,
-          child: Row(
-            children: [
-              Icon(ReminderOption.nextWeek.icon, color: Colors.black),
-              const SizedBox(width: 8),
-              Text(ReminderOption.nextWeek.displayText),
-              const Spacer(),
-              Text(DateFormat('EEE, h:mm a').format(nextWeek),
-                  style: const TextStyle(color: Colors.grey)),
-            ],
-          ),
-        ),
-        PopupMenuItem<ReminderOption>(
-          value: ReminderOption.pickDateTime,
-          child: Row(
-            children: [
-              Icon(ReminderOption.pickDateTime.icon, color: Colors.black),
-              const SizedBox(width: 8),
-              Text(ReminderOption.pickDateTime.displayText),
-            ],
-          ),
-        ),
+        _buildPopupMenuItem(ReminderOption.laterToday),
+        _buildPopupMenuItem(ReminderOption.tomorrow, tomorrow),
+        _buildPopupMenuItem(ReminderOption.nextWeek, nextWeek),
+         const PopupMenuDivider(), 
+        _buildPopupMenuItem(ReminderOption.pickDateTime),
       ],
+      color: Colors.white, 
     ).then((value) {
       if (value != null) {
         onSelectReminder(value);
       }
     });
+  }
+
+// Method to build a PopupMenuItem
+ PopupMenuItem<ReminderOption> _buildPopupMenuItem(ReminderOption option,
+      [DateTime? date]) {
+    return PopupMenuItem<ReminderOption>(
+      value: option,
+      child: Row(
+        children: [
+          getIconForReminder(option), // Use the method to get the icon
+          const SizedBox(width: 8),
+          Text(
+            option.displayText,
+            style: const TextStyle(fontWeight: FontWeight.w300), // Thin style
+          ),
+          if (date != null) ...[
+            const Spacer(),
+            Text(
+              DateFormat('EEE, h:mm a').format(date),
+              style: const TextStyle(color: Colors.grey),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget getIconForReminder(ReminderOption option) {
+    switch (option) {
+      case ReminderOption.laterToday:
+        return const Icon(Icons.update); // Material icon
+      case ReminderOption.tomorrow:
+        return const Icon(Icons.arrow_circle_right_outlined); // Material icon
+      case ReminderOption.nextWeek:
+        return SvgPicture.asset(
+          'assets/icons/double-right-sign-circle-svgrepo-com.svg', // Update the path as necessary
+          width: 24, // Set the desired width
+          height: 24, // Set the desired height
+        );
+      case ReminderOption.pickDateTime:
+        return const Icon(Icons.date_range); // Material icon
+      default:
+        return const SizedBox(); // Return an empty widget for default case
+    }
   }
 }
 
@@ -799,19 +804,6 @@ extension ReminderOptionExtension on ReminderOption {
         return 'Next week';
       case ReminderOption.pickDateTime:
         return 'Pick a date & time';
-    }
-  }
-
-  IconData get icon {
-    switch (this) {
-      case ReminderOption.laterToday:
-        return Icons.access_time;
-      case ReminderOption.tomorrow:
-        return Icons.calendar_today;
-      case ReminderOption.nextWeek:
-        return Icons.calendar_view_week;
-      case ReminderOption.pickDateTime:
-        return Icons.date_range;
     }
   }
 }
