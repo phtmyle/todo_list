@@ -1,20 +1,19 @@
-import 'package:flutter/foundation.dart';
+import 'repeat_frequency.dart'; // Import the RepeatFrequency enum
 
-class Todo extends ChangeNotifier {
+class Todo {
   final String id;
   final String title;
-  final DateTime dueDate; // Changed to DateTime
-  bool isCompleted;
+  final DateTime? dueDate; 
+  final bool remindMe; 
+  final RepeatFrequency repeat; 
+  bool isCompleted; 
 
   Todo({
     required this.id,
     required this.title,
-    required this.dueDate,
-    this.isCompleted = false,
+    this.dueDate,
+    this.remindMe = false, 
+    this.repeat = RepeatFrequency.none, 
+    this.isCompleted = false, 
   });
-
-  void toggleCompleted() {
-    isCompleted = !isCompleted;
-    notifyListeners();
-  }
 }

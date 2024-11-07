@@ -1,63 +1,69 @@
-import 'package:flutter/cupertino.dart';
-import 'package:todo_list/models/todo.dart';
-import 'package:uuid/uuid.dart';
+import 'package:flutter/foundation.dart';
 
-import '../services/notification_service.dart';
+import '../models/todo.dart';
 
-class TodoViewModel extends ChangeNotifier {
-  final List<Todo> _todos = [];
+class TodoListViewModel extends ChangeNotifier {
+  final List<Todo> _todos;
 
-  List<Todo> get todos => _todos;
-  final notificationService = NotificationService();
+  TodoListViewModel(this._todos);
 
-  void addTodo(String title, DateTime dueDate) {
-    // Changed to DateTime
-    final newTodo = Todo(
-      id: const Uuid().v4(),
-      title: title,
-      dueDate: dueDate,
-    );
-    _todos.add(newTodo);
-    notifyListeners();
-    notificationService.scheduleNotification(
-      newTodo.id.hashCode,
-      'Todo Reminder',
-      'Don\'t forget to complete: ${newTodo.title}',
-      dueDate,
-    );
+  List<Todo> getTodos() {
+    return _todos;
   }
 
-  void markAsCompleted(String id) {
-    final todo = _todos.firstWhere((todo) => todo.id == id);
-    todo.isCompleted = true;
-    notifyListeners();
-  }
-
-  List<Todo> getTodoByCategory(String category) {
-    final now = DateTime.now(); // Changed to DateTime
+  // Get todos by category
+  List<Todo> getTodosByCategory(String category) {
+    DateTime now = DateTime.now();
+    DateTime tomorrow = now.add(const Duration(days: 1));
     switch (category) {
       case 'Today':
         return _todos
             .where((todo) =>
-                todo.dueDate.year == now.year &&
-                todo.dueDate.month == now.month &&
-                todo.dueDate.day == now.day)
+                !todo.isCompleted &&
+                todo.dueDate != null &&
+                todo.dueDate!.year == now.year &&
+                todo.dueDate!.month == now.month &&
+                todo.dueDate!.day == now.day)
             .toList();
       case 'Tomorrow':
         return _todos
             .where((todo) =>
-                todo.dueDate.year == now.year &&
-                todo.dueDate.month == now.month &&
-                todo.dueDate.day == now.day + 1)
+                !todo.isCompleted &&
+                todo.dueDate != null &&
+                todo.dueDate!.year == tomorrow.year &&
+                todo.dueDate!.month == tomorrow.month &&
+                todo.dueDate!.day == tomorrow.day)
             .toList();
       case 'Upcoming':
         return _todos
             .where((todo) =>
-                todo.dueDate.isAfter(now) ||
-                todo.dueDate.isAfter(now.add(const Duration(days: 1))))
+                !todo.isCompleted &&
+                (todo.dueDate == null || todo.dueDate!.isAfter(now)))
             .toList();
-      default:
+      default: // 'All'
         return _todos;
     }
+  }
+
+  // Add a new todo
+  void addTodo(Todo todo) {
+    _todos.add(todo);
+  }
+
+  // Remove a todo
+  void removeTodo(String id) {
+    _todos.removeWhere((todo) => todo.id == id);
+  }
+
+  // Mark a todo as completed
+  void completeTodo(String id) {
+    final todo = _todos.firstWhere((todo) => todo.id == id);
+    todo.isCompleted = true;
+  }
+    // Update the status of a todo
+  void updateTodoStatus(String id, bool isCompleted) {
+    final todo = _todos.firstWhere((todo) => todo.id == id);
+    todo.isCompleted = isCompleted;
+    notifyListeners(); // Notify listeners to update the UI
   }
 }
