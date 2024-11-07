@@ -3,7 +3,7 @@ import 'package:flutter/foundation.dart';
 class Todo extends ChangeNotifier {
   final String id;
   final String title;
-  final DateTime dueDate;
+  final DateTime dueDate; // Changed to DateTime
   bool isCompleted;
 
   Todo({

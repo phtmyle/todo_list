@@ -1,16 +1,17 @@
 import 'package:flutter/cupertino.dart';
-import 'package:timezone/timezone.dart' as tz;
 import 'package:todo_list/models/todo.dart';
-import 'package:todo_list/services/notification_service.dart';
 import 'package:uuid/uuid.dart';
 
-class TodolistViewModel extends ChangeNotifier {
+import '../services/notification_service.dart';
+
+class TodoViewModel extends ChangeNotifier {
   final List<Todo> _todos = [];
-  final NotificationService _notificationService = NotificationService();
 
   List<Todo> get todos => _todos;
+  final notificationService = NotificationService();
 
   void addTodo(String title, DateTime dueDate) {
+    // Changed to DateTime
     final newTodo = Todo(
       id: const Uuid().v4(),
       title: title,
@@ -18,11 +19,11 @@ class TodolistViewModel extends ChangeNotifier {
     );
     _todos.add(newTodo);
     notifyListeners();
-    _notificationService.scheduleNotification(
+    notificationService.scheduleNotification(
       newTodo.id.hashCode,
       'Todo Reminder',
       'Don\'t forget to complete: ${newTodo.title}',
-      tz.TZDateTime.from(dueDate, tz.local),
+      dueDate,
     );
   }
 
@@ -33,7 +34,7 @@ class TodolistViewModel extends ChangeNotifier {
   }
 
   List<Todo> getTodoByCategory(String category) {
-    final now = DateTime.now();
+    final now = DateTime.now(); // Changed to DateTime
     switch (category) {
       case 'Today':
         return _todos
@@ -52,6 +53,7 @@ class TodolistViewModel extends ChangeNotifier {
       case 'Upcoming':
         return _todos
             .where((todo) =>
+                todo.dueDate.isAfter(now) ||
                 todo.dueDate.isAfter(now.add(const Duration(days: 1))))
             .toList();
       default:
