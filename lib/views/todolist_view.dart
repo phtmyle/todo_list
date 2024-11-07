@@ -336,53 +336,68 @@ class _AddTodoBottomSheetState extends State<AddTodoBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black26,
+            blurRadius: 10,
+            spreadRadius: 0,
+            offset: Offset(0, -2),
+          ),
+        ],
+      ),
       padding: const EdgeInsets.all(16.0),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Row(
             children: [
-              Icon(Icons.radio_button_unchecked, size: 24),
+              const Icon(Icons.radio_button_unchecked, size: 24, color: Colors.blue),
               const SizedBox(width: 8),
               Expanded(
-                  child: TextField(
-                    decoration: const InputDecoration(
-                      hintText: 'Add a task',
-                      border: InputBorder.none,
-                      hintStyle: TextStyle(
-                        color: Colors.grey), 
-                    ),
-                    onChanged: (value) => title = value,
+                child: TextField(
+                  decoration: InputDecoration(
+                    hintText: 'Add a task',
+                    border: InputBorder.none,
+                    hintStyle: TextStyle(color: Colors.grey[400]),
                   ),
+                  onChanged: (value) => title = value,
+                ),
               ),
             ],
           ),
-          const Divider(),
+          const Divider(thickness: 1, color: Colors.grey),
+          const SizedBox(height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
+              const Row(
                 children: [
-                  Icon(Icons.calendar_today, size: 24),
-                  const SizedBox(width: 8),
-                  const Text('Set due date'),
+                  Icon(Icons.calendar_today, size: 24, color: Colors.blue),
+                  SizedBox(width: 8),
+                  Text('Set due date',
+                      style: TextStyle(color: Colors.black)),
                 ],
               ),
               IconButton(
-                icon: const Icon(Icons.arrow_forward_ios),
+                icon: const Icon(Icons.arrow_forward_ios, color: Colors.blue),
                 onPressed: () => _selectDate(context),
               ),
             ],
           ),
+          const SizedBox(height: 8),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
+              const Row(
                 children: [
-                  Icon(Icons.notifications, size: 24),
-                  const SizedBox(width: 8),
-                  const Text('Remind me'),
+                  Icon(Icons.notifications, size: 24, color: Colors.blue),
+                  SizedBox(width: 8),
+                  Text('Remind me',
+                      style: TextStyle(color: Colors.black)),
                 ],
               ),
               Switch(
@@ -392,17 +407,19 @@ class _AddTodoBottomSheetState extends State<AddTodoBottomSheet> {
                     remindMe = value;
                   });
                 },
+                activeColor: Colors.blue,
               ),
             ],
           ),
+          const SizedBox(height: 8),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
+              const Row(
                 children: [
-                  Icon(Icons.repeat, size: 24),
-                  const SizedBox(width: 8),
-                  const Text('Repeat'),
+                  Icon(Icons.repeat, size: 24, color: Colors.blue),
+                  SizedBox(width: 8),
+                  Text('Repeat', style: TextStyle(color: Colors.black)),
                 ],
               ),
               DropdownButton<RepeatFrequency>(
@@ -431,7 +448,18 @@ class _AddTodoBottomSheetState extends State<AddTodoBottomSheet> {
                 Navigator.of(context).pop();
               }
             },
-            child: const Text('Add Task'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blue,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            child:
+                const Padding(
+                  padding: EdgeInsets.all(8.0),
+                  child: Text('Add Task', style: TextStyle(color: Colors.white)),
+                ),
           ),
         ],
       ),
