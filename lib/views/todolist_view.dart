@@ -42,6 +42,7 @@ class TodoListViewState extends State<TodoListView> {
   void _addTodo() {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       builder: (context) {
         return AddTodoBottomSheet(
           onAdd: (title, dueDate, remindMe, repeat) {
@@ -77,7 +78,8 @@ class TodoListViewState extends State<TodoListView> {
     List<Todo> completedTodos =
         widget.viewModel.getTodos().where((todo) => todo.isCompleted).toList();
 
-    return Scaffold(
+    return SafeArea(
+        child: Scaffold(
       appBar: AppBar(
         title: const Text('Todo List',
             style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
@@ -262,7 +264,7 @@ class TodoListViewState extends State<TodoListView> {
         backgroundColor: const Color(0xFF5C6BC0),
         child: const Icon(Icons.add, size: 32),
       ),
-    );
+    ));
   }
 }
 
@@ -299,23 +301,23 @@ class _AddTodoBottomSheetState extends State<AddTodoBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black26,
-            blurRadius: 10,
-            spreadRadius: 0,
-            offset: Offset(0, -2),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.all(16.0),
-      child: SingleChildScrollView(
-        padding:
-            EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+    return Padding(
+      padding:
+          EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      child: Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black26,
+              blurRadius: 10,
+              spreadRadius: 0,
+              offset: Offset(0, -2),
+            ),
+          ],
+        ),
+        padding: const EdgeInsets.all(16.0),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -329,7 +331,6 @@ class _AddTodoBottomSheetState extends State<AddTodoBottomSheet> {
                   },
                 ),
                 const SizedBox(width: 8),
-                // Floating Action Button
                 GestureDetector(
                   onTap: () {
                     if (title.isNotEmpty) {
@@ -353,12 +354,9 @@ class _AddTodoBottomSheetState extends State<AddTodoBottomSheet> {
               ],
             ),
             const SizedBox(height: 16),
-            // Scrollable Row for Controls
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
-                mainAxisAlignment:
-                    MainAxisAlignment.start, // Align items to the start
                 children: [
                   _DueDateControl(
                     dueDate: dueDate,
@@ -372,36 +370,28 @@ class _AddTodoBottomSheetState extends State<AddTodoBottomSheet> {
                         remindMe = value;
                       });
                     },
-                    reminderDate: reminderDate, // Pass reminder date
+                    reminderDate: reminderDate,
                     onSelectReminder: (option) {
                       switch (option) {
                         case ReminderOption.laterToday:
-                          // Set reminder for later today
                           setState(() {
-                            reminderDate = DateTime.now().add(const Duration(
-                                hours: 2)); // Example: 2 hours from now
+                            reminderDate =
+                                DateTime.now().add(const Duration(hours: 1));
                           });
                           break;
                         case ReminderOption.tomorrow:
-                          // Set reminder for tomorrow
                           setState(() {
-                            reminderDate = DateTime.now()
-                                .add(const Duration(days: 1))
-                                .copyWith(
-                                    hour: 9, minute: 0); // Tomorrow at 9:00 AM
+                            reminderDate =
+                                DateTime.now().add(const Duration(days: 1));
                           });
                           break;
                         case ReminderOption.nextWeek:
-                          // Set reminder for next week
                           setState(() {
-                            reminderDate = DateTime.now()
-                                .add(const Duration(days: 7))
-                                .copyWith(
-                                    hour: 9, minute: 0); // Next week at 9:00 AM
+                            reminderDate =
+                                DateTime.now().add(const Duration(days: 7));
                           });
                           break;
                         case ReminderOption.pickDateTime:
-                          // Handle picking a date and time
                           _selectDateTime(context);
                           break;
                       }
@@ -410,21 +400,19 @@ class _AddTodoBottomSheetState extends State<AddTodoBottomSheet> {
                   const SizedBox(width: 16),
                   RepeatControl(
                     onChanged: (selectedOption) {
-                      // Handle the selected repeat option here
                       print(
                           'Selected Repeat Option: ${selectedOption?.displayText}');
                     },
                   ),
                 ],
               ),
-            ),
+            )
           ],
         ),
       ),
     );
   }
 
-  // Method to pick a date and time
   Future<void> _selectDateTime(BuildContext context) async {
     DateTime? pickedDate = await showDatePicker(
       context: context,
