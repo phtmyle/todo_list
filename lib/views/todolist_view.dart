@@ -7,7 +7,6 @@ import '../models/repeat_frequency.dart';
 import '../models/todo.dart';
 import '../viewmodels/todolist_viewmodel.dart';
 
-// Create a new widget TodoListTile
 class TodoListTile extends StatelessWidget {
   final Todo todo;
   final Function(Todo) onToggleCompletion;
@@ -107,7 +106,7 @@ class TodoListViewState extends State<TodoListView> {
 
   void _toggleTodoCompletion(Todo todo) {
     setState(() {
-      todo.isCompleted = !todo.isCompleted;
+      widget.viewModel.toggleTodoCompletion(todo);
     });
   }
 
@@ -115,7 +114,9 @@ class TodoListViewState extends State<TodoListView> {
     showSearch(
       context: context,
       delegate: TodoSearchDelegate(widget.viewModel),
-    );
+    ).then((_) {
+      setState(() {}); // Refresh the UI when the search is closed
+    });
   }
 
   @override
@@ -395,17 +396,21 @@ class TodoSearchDelegate extends SearchDelegate<Todo?> {
       return todo.title.toLowerCase().contains(query.toLowerCase());
     }).toList();
 
-    return ListView.builder(
-      itemCount: results.length,
-      itemBuilder: (context, index) {
-        final todo = results[index];
-        return ListTile(
-          title: Text(todo.title),
-          onTap: () {
-            close(context, todo);
-          },
-        );
-      },
+    return Container(
+      color: const Color(0xFF5C6BC0),
+      child: ListView.builder(
+        itemCount: results.length,
+        itemBuilder: (context, index) {
+          final todo = results[index];
+          return TodoListTile(
+            todo: todo,
+            onToggleCompletion: (todo) {
+              viewModel.toggleTodoCompletion(todo);
+              close(context, todo);
+            },
+          );
+        },
+      ),
     );
   }
 
@@ -415,18 +420,23 @@ class TodoSearchDelegate extends SearchDelegate<Todo?> {
       return todo.title.toLowerCase().contains(query.toLowerCase());
     }).toList();
 
-    return ListView.builder(
-      itemCount: suggestions.length,
-      itemBuilder: (context, index) {
-        final todo = suggestions[index];
-        return ListTile(
-          title: Text(todo.title),
-          onTap: () {
-            query = todo.title;
-            showResults(context);
-          },
-        );
-      },
+    return Container(
+      color: const Color(0xFF5C6BC0),
+      child: ListView.builder(
+        itemCount: suggestions.length,
+        itemBuilder: (context, index) {
+          final todo = suggestions[index];
+          return TodoListTile(
+            todo: todo,
+            onToggleCompletion: (todo) {
+              viewModel.toggleTodoCompletion(todo);
+              // query = todo.title;
+              query = '';
+              showResults(context);
+            },
+          );
+        },
+      ),
     );
   }
 }

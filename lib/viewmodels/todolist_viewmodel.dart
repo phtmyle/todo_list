@@ -94,4 +94,9 @@ class TodoListViewModel extends ChangeNotifier {
     todo.isCompleted = isCompleted;
     notifyListeners();
   }
+
+  void toggleTodoCompletion(Todo todo) {
+    todo.isCompleted = !todo.isCompleted;
+    notifyListeners();
+  }
 }
