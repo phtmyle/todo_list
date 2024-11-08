@@ -25,26 +25,63 @@ class TodoListTile extends StatefulWidget {
 
 class _TodoListTileState extends State<TodoListTile> {
   bool showTrashIcon = false;
+  OverlayEntry? _overlayEntry;
+
+  void _showOverlay() {
+    _overlayEntry = OverlayEntry(
+      builder: (context) => Positioned.fill(
+        child: GestureDetector(
+          onTap: () {
+            _hideTrashIcon();
+          },
+          behavior: HitTestBehavior.opaque,
+          child: Container(
+            color:
+                Colors.transparent, // Invisible overlay to detect outside taps
+          ),
+        ),
+      ),
+    );
+    Overlay.of(context).insert(_overlayEntry!);
+  }
+
+  void _hideOverlay() {
+    _overlayEntry?.remove();
+    _overlayEntry = null;
+  }
+
+  void _showTrashIcon() {
+    setState(() {
+      showTrashIcon = true;
+    });
+    _showOverlay(); // Show overlay when trash icon is displayed
+  }
+
+  void _hideTrashIcon() {
+    setState(() {
+      showTrashIcon = false;
+    });
+    _hideOverlay(); // Hide overlay when trash icon is hidden
+  }
+
+  @override
+  void dispose() {
+    _hideOverlay(); // Clean up overlay on dispose
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final customColors = Theme.of(context).extension<CustomColors>()!;
 
     return GestureDetector(
-      onLongPress: () {
-        setState(() {
-          showTrashIcon = true;
-        });
-      },
-      onTap: () {
-        setState(() {
-          showTrashIcon = false;
-        });
-      },
+      // Show trash icon on long press
+      onLongPress: _showTrashIcon,
       child: Stack(
         children: [
+          // Main content of the tile
           AnimatedContainer(
-            duration: const Duration(milliseconds: 300),
+            duration: const Duration(milliseconds: 200),
             margin: const EdgeInsets.symmetric(vertical: 8),
             padding: EdgeInsets.only(right: showTrashIcon ? 48 : 0),
             child: Card(
@@ -94,6 +131,7 @@ class _TodoListTileState extends State<TodoListTile> {
               ),
             ),
           ),
+          // Trash icon that only appears when showTrashIcon is true
           if (showTrashIcon)
             Positioned(
               right: 0,
@@ -102,10 +140,9 @@ class _TodoListTileState extends State<TodoListTile> {
               child: IconButton(
                 icon: const Icon(Icons.delete, color: Colors.red),
                 onPressed: () {
-                  setState(() {
-                    Provider.of<TodoListViewModel>(context, listen: false)
-                        .removeTodo(widget.todo.id);
-                  });
+                  Provider.of<TodoListViewModel>(context, listen: false)
+                      .removeTodo(widget.todo.id);
+                  _hideTrashIcon(); // Hide trash icon after deletion
                 },
               ),
             ),
@@ -189,6 +226,7 @@ class TodoListViewState extends State<TodoListView> {
   }
 
   @override
+  @override
   Widget build(BuildContext context) {
     List<Todo> todos = widget.viewModel.getTodos();
     List<Todo> filteredTodos = _filterTodosByCategory(todos, selectedCategory);
@@ -197,114 +235,128 @@ class TodoListViewState extends State<TodoListView> {
     List<Todo> completedTodos =
         filteredTodos.where((todo) => todo.isCompleted).toList();
 
-    return SafeArea(
-      child: Scaffold(
-        backgroundColor: Theme.of(context).primaryColor,
-        appBar: AppBar(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          actions: [
-            DropdownButtonHideUnderline(
-              child: DropdownButton<String>(
-                value: selectedCategory,
-                isDense: true,
-                icon: const ColorFiltered(
-                  colorFilter: ColorFilter.mode(Colors.white, BlendMode.srcIn),
-                  child: Icon(Icons.filter_list),
-                ),
-                items: <String>['All', 'Today', 'Upcoming'].map((String value) {
-                  return DropdownMenuItem<String>(
-                    value: value,
-                    child: Text(
-                      value,
-                      style: const TextStyle(color: Colors.black),
-                    ),
-                  );
-                }).toList(),
-                onChanged: (String? newValue) {
-                  setState(() {
-                    selectedCategory = newValue!;
-                  });
-                },
-                selectedItemBuilder: (BuildContext context) {
-                  return <String>['All', 'Today', 'Upcoming']
-                      .map((String value) {
-                    return Text(
-                      value,
-                      style: const TextStyle(color: Colors.white),
-                    );
-                  }).toList();
-                },
-              ),
-            ),
-            const SizedBox(width: 12),
-            IconButton(
-              icon: const Icon(Icons.search),
-              onPressed: _onSearchIconPressed,
-            ),
-            const Icon(Icons.more_vert, size: 28),
-            const SizedBox(width: 12),
-          ],
-        ),
-        body: Container(
-          color: Theme.of(context).primaryColor,
-          child: Column(
-            children: [
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                child: Row(
-                  children: [
-                    SizedBox(width: 8),
-                    Text(
-                      'Daily',
-                      style:
-                          TextStyle(fontSize: 36, fontWeight: FontWeight.bold),
-                    ),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: ListView(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: pendingTodos
-                            .map((todo) => _buildDismissibleTodoItem(todo))
-                            .toList(),
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          // Hide the trash icon when tapping outside
+          for (var todo in todos) {
+            // No need to set showTrashIcon here as it's managed in TodoListTile
+          }
+        });
+      },
+      child: SafeArea(
+        child: Scaffold(
+          backgroundColor: Theme.of(context).primaryColor,
+          appBar: AppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            actions: [
+              DropdownButtonHideUnderline(
+                child: DropdownButton<String>(
+                  value: selectedCategory,
+                  isDense: true,
+                  icon: const ColorFiltered(
+                    colorFilter:
+                        ColorFilter.mode(Colors.white, BlendMode.srcIn),
+                    child: Icon(Icons.filter_list),
+                  ),
+                  items:
+                      <String>['All', 'Today', 'Upcoming'].map((String value) {
+                    return DropdownMenuItem<String>(
+                      value: value,
+                      child: Text(
+                        value,
+                        style: const TextStyle(color: Colors.black),
                       ),
-                    ),
-                    if (completedTodos.isNotEmpty) ...[
-                      if (pendingTodos.isNotEmpty) const Divider(thickness: 1),
-                      _buildCompletedTasksSection(completedTodos),
-                    ]
-                  ],
+                    );
+                  }).toList(),
+                  onChanged: (String? newValue) {
+                    setState(() {
+                      selectedCategory = newValue!;
+                    });
+                  },
+                  selectedItemBuilder: (BuildContext context) {
+                    return <String>['All', 'Today', 'Upcoming']
+                        .map((String value) {
+                      return Text(
+                        value,
+                        style: const TextStyle(color: Colors.white),
+                      );
+                    }).toList();
+                  },
                 ),
-              )
+              ),
+              const SizedBox(width: 12),
+              IconButton(
+                icon: const Icon(Icons.search),
+                onPressed: _onSearchIconPressed,
+              ),
+              const Icon(Icons.more_vert, size: 28),
+              const SizedBox(width: 12),
             ],
           ),
-        ),
-        floatingActionButton: GestureDetector(
-          onTap: _addTodo,
-          child: Container(
-            width: 60,
-            height: 60,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.2),
-                  spreadRadius: 2,
-                  blurRadius: 6,
-                  offset: const Offset(0, 3),
+          body: Container(
+            color: Theme.of(context).primaryColor,
+            child: Column(
+              children: [
+                const Padding(
+                  padding:
+                      EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                  child: Row(
+                    children: [
+                      SizedBox(width: 8),
+                      Text(
+                        'Daily',
+                        style: TextStyle(
+                            fontSize: 36, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
                 ),
+                Expanded(
+                  child: ListView(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: pendingTodos
+                              .map((todo) => _buildDismissibleTodoItem(todo))
+                              .toList(),
+                        ),
+                      ),
+                      if (completedTodos.isNotEmpty) ...[
+                        if (pendingTodos.isNotEmpty)
+                          const Divider(thickness: 1),
+                        _buildCompletedTasksSection(completedTodos),
+                      ]
+                    ],
+                  ),
+                )
               ],
             ),
-            child: Icon(Icons.add,
-                size: 32, color: Theme.of(context).primaryColor),
+          ),
+          floatingActionButton: GestureDetector(
+            onTap: _addTodo,
+            child: Container(
+              width: 60,
+              height: 60,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.2),
+                    spreadRadius: 2,
+                    blurRadius: 6,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: Icon(Icons.add,
+                  size: 32, color: Theme.of(context).primaryColor),
+            ),
           ),
         ),
       ),
