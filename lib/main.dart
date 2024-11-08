@@ -1,23 +1,33 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:provider/provider.dart';
+import 'package:todo_list/services/notification_service.dart';
 import 'package:todo_list/viewmodels/todolist_viewmodel.dart';
 import 'package:todo_list/views/todolist_view.dart';
 
+final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+    FlutterLocalNotificationsPlugin();
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(const MyApp());
+
+  final NotificationService notificationService =
+      NotificationService(flutterLocalNotificationsPlugin);
+  await notificationService.initialize();
+
+  runApp(MyApp(notificationService: notificationService));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final NotificationService notificationService;
+
+  const MyApp({super.key, required this.notificationService});
 
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider<TodoListViewModel>(
-      // create: (_) => TodoListViewModel([]),
-      create: (_) => TodoListViewModel(),
-
-      // Pass an empty list or initial list of todos
+      create: (_) =>
+          TodoListViewModel(notificationService: notificationService),
       child: MaterialApp(
         title: 'Flutter Demo',
         theme: ThemeData(

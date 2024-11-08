@@ -1,7 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/svg.dart';
-import 'package:intl/intl.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:todo_list/services/notification_service.dart';
 
 import '../models/repeat_frequency.dart';
@@ -20,13 +19,15 @@ class TodoListView extends StatefulWidget {
 class TodoListViewState extends State<TodoListView> {
   String selectedCategory = 'All';
   TextEditingController searchController = TextEditingController();
-  final NotificationService notificationService = NotificationService();
   bool isCompletedTasksExpanded = false;
+  late NotificationService notificationService;
 
   @override
   void initState() {
     super.initState();
     searchController.addListener(_onSearchChanged);
+    notificationService =
+        NotificationService(FlutterLocalNotificationsPlugin());
   }
 
   @override
@@ -46,18 +47,16 @@ class TodoListViewState extends State<TodoListView> {
       isScrollControlled: true,
       builder: (context) {
         return AddTodoBottomSheet(
-          onAdd: (title, dueDate, remindMe, repeat) {
+          onAdd: (title, dueDate, dueTime, repeat) {
             final newTodo = Todo(
               id: DateTime.now().toString(),
               title: title,
               dueDate: dueDate,
-              remindMe: remindMe,
+              dueTime: dueTime,
               repeat: repeat,
             );
             widget.viewModel.addTodoAtBeginning(newTodo);
-            if (remindMe) {
-              notificationService.scheduleNotification(newTodo);
-            }
+            notificationService.scheduleNotification(newTodo);
             Navigator.of(context).pop();
             setState(() {});
           },
@@ -270,7 +269,7 @@ class TodoListViewState extends State<TodoListView> {
 }
 
 class AddTodoBottomSheet extends StatefulWidget {
-  final Function(String title, DateTime? dueDate, bool remindMe,
+  final Function(String title, DateTime? dueDate, TimeOfDay? dueTime,
       RepeatFrequency repeat) onAdd;
 
   const AddTodoBottomSheet({super.key, required this.onAdd});
@@ -282,9 +281,7 @@ class AddTodoBottomSheet extends StatefulWidget {
 class _AddTodoBottomSheetState extends State<AddTodoBottomSheet> {
   String title = '';
   DateTime? dueDate;
-  bool remindMe = false;
-  DateTime? reminderDate;
-  DateTime? dueTime;
+  TimeOfDay? dueTime;
   RepeatFrequency repeat = RepeatFrequency.none;
 
   @override
@@ -322,7 +319,7 @@ class _AddTodoBottomSheetState extends State<AddTodoBottomSheet> {
                 GestureDetector(
                     onTap: () {
                       if (title.isNotEmpty) {
-                        widget.onAdd(title, dueDate, remindMe, repeat);
+                        widget.onAdd(title, dueDate, dueTime, repeat);
                       }
                     },
                     child: Container(
@@ -359,40 +356,6 @@ class _AddTodoBottomSheetState extends State<AddTodoBottomSheet> {
                     },
                   ),
                   const SizedBox(width: 16),
-                  // _ReminderControl(
-                  //   remindMe: remindMe,
-                  //   onToggle: (value) {
-                  //     setState(() {
-                  //       remindMe = value;
-                  //     });
-                  //   },
-                  //   reminderDate: reminderDate,
-                  //   onSelectReminder: (option) {
-                  //     switch (option) {
-                  //       case ReminderOption.laterToday:
-                  //         setState(() {
-                  //           reminderDate =
-                  //               DateTime.now().add(const Duration(hours: 1));
-                  //         });
-                  //         break;
-                  //       case ReminderOption.tomorrow:
-                  //         setState(() {
-                  //           reminderDate =
-                  //               DateTime.now().add(const Duration(days: 1));
-                  //         });
-                  //         break;
-                  //       case ReminderOption.nextWeek:
-                  //         setState(() {
-                  //           reminderDate =
-                  //               DateTime.now().add(const Duration(days: 7));
-                  //         });
-                  //         break;
-                  //       case ReminderOption.pickDateTime:
-                  //         _selectDateTime(context);
-                  //         break;
-                  //     }
-                  //   },
-                  // ),
                   _SetTimeControl(
                     dueTime: dueTime,
                     onTimeChanged: (time) {
@@ -540,9 +503,10 @@ class _DueDateControlState extends State<_DueDateControl> {
 }
 
 // Set Time Control
+// Update the _SetTimeControl widget to use TimeOfDay instead of DateTime for dueTime
 class _SetTimeControl extends StatefulWidget {
-  final DateTime? dueTime;
-  final ValueChanged<DateTime?> onTimeChanged;
+  final TimeOfDay? dueTime;
+  final ValueChanged<TimeOfDay?> onTimeChanged;
 
   const _SetTimeControl({
     required this.dueTime,
@@ -554,7 +518,7 @@ class _SetTimeControl extends StatefulWidget {
 }
 
 class _SetTimeControlState extends State<_SetTimeControl> {
-  DateTime? dueTime;
+  TimeOfDay? dueTime;
 
   @override
   void initState() {
@@ -583,7 +547,7 @@ class _SetTimeControlState extends State<_SetTimeControl> {
             const SizedBox(width: 8),
             Text(
               dueTime != null
-                  ? 'Due at ${DateFormat('h:mm a').format(dueTime!)}'
+                  ? 'Due at ${dueTime!.format(context)}'
                   : 'Set a time',
               style: TextStyle(
                 color: dueTime != null ? Colors.white : Colors.grey,
@@ -612,169 +576,14 @@ class _SetTimeControlState extends State<_SetTimeControl> {
   Future<void> _selectTime(BuildContext context) async {
     final TimeOfDay? picked = await showTimePicker(
       context: context,
-      initialTime: TimeOfDay.fromDateTime(dueTime ?? DateTime.now()),
+      initialTime: dueTime ?? TimeOfDay.now(),
     );
     if (picked != null) {
       setState(() {
-        dueTime = DateTime(
-          DateTime.now().year,
-          DateTime.now().month,
-          DateTime.now().day,
-          picked.hour,
-          picked.minute,
-        );
+        dueTime = picked;
       });
       widget.onTimeChanged(dueTime);
     }
-  }
-}
-
-// Reminder Control Widget
-class _ReminderControl extends StatelessWidget {
-  final bool remindMe;
-  final DateTime? reminderDate;
-  final ValueChanged<bool> onToggle;
-  final ValueChanged<ReminderOption> onSelectReminder;
-
-  const _ReminderControl({
-    required this.remindMe,
-    required this.reminderDate,
-    required this.onToggle,
-    required this.onSelectReminder,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => onToggle(!remindMe),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        height: 40,
-        decoration: BoxDecoration(
-          color: remindMe ? const Color(0xFF5D70BD) : Colors.grey[200],
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.notifications,
-              size: 24,
-              color: remindMe ? Colors.white : Colors.grey,
-            ),
-            const SizedBox(width: 8),
-            GestureDetector(
-              onTap: () {
-                _showPopupMenu(context);
-              },
-              child: Text(
-                remindMe
-                    ? 'Remind me at ${reminderDate?.toLocal().toString().split(' ')[0]}'
-                    : 'Remind me',
-                style: TextStyle(
-                  color: remindMe ? Colors.white : Colors.grey,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showPopupMenu(BuildContext context) {
-    RenderBox renderBox = context.findRenderObject() as RenderBox;
-    Offset offset = renderBox.localToGlobal(Offset.zero);
-
-    double x = offset.dx;
-    double y = offset.dy + renderBox.size.height; // Position below the widget
-
-    // Get the current date
-    DateTime now = DateTime.now();
-    DateTime tomorrow = now.add(const Duration(days: 1));
-    DateTime nextWeek = now.add(const Duration(days: 7));
-
-    // Show the menu
-    showMenu<ReminderOption>(
-      context: context,
-      position: RelativeRect.fromLTRB(x, y, 0, 0),
-      items: [
-        _buildPopupMenuItem(ReminderOption.laterToday),
-        _buildPopupMenuItem(ReminderOption.tomorrow, tomorrow),
-        _buildPopupMenuItem(ReminderOption.nextWeek, nextWeek),
-        const PopupMenuDivider(),
-        _buildPopupMenuItem(ReminderOption.pickDateTime),
-      ],
-      color: Colors.white,
-    ).then((value) {
-      if (value != null) {
-        onSelectReminder(value);
-      }
-    });
-  }
-
-  PopupMenuItem<ReminderOption> _buildPopupMenuItem(ReminderOption option,
-      [DateTime? date]) {
-    return PopupMenuItem<ReminderOption>(
-      value: option,
-      child: Row(
-        children: [
-          getIconForReminder(option),
-          const SizedBox(width: 8),
-          Text(
-            option.displayText,
-          ),
-          if (date != null) ...[
-            const Spacer(),
-            Text(
-              DateFormat('EEE, h:mm a').format(date),
-              style: const TextStyle(color: Colors.grey),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-enum ReminderOption {
-  laterToday,
-  tomorrow,
-  nextWeek,
-  pickDateTime,
-}
-
-extension ReminderOptionExtension on ReminderOption {
-  String get displayText {
-    switch (this) {
-      case ReminderOption.laterToday:
-        return 'Later today';
-      case ReminderOption.tomorrow:
-        return 'Tomorrow';
-      case ReminderOption.nextWeek:
-        return 'Next week';
-      case ReminderOption.pickDateTime:
-        return 'Pick a date & time';
-    }
-  }
-}
-
-Widget getIconForReminder(ReminderOption option) {
-  switch (option) {
-    case ReminderOption.laterToday:
-      return const Icon(Icons.update); // Material icon
-    case ReminderOption.tomorrow:
-      return const Icon(Icons.arrow_circle_right_outlined); // Material icon
-    case ReminderOption.nextWeek:
-      return SvgPicture.asset(
-        'assets/icons/double-right-sign-circle-svgrepo-com.svg',
-        width: 24,
-        height: 24,
-      );
-    case ReminderOption.pickDateTime:
-      return const Icon(Icons.date_range); // Material icon
-    default:
-      return const SizedBox();
   }
 }
 

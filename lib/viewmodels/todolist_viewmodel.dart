@@ -1,32 +1,30 @@
 import 'package:flutter/cupertino.dart';
 
 import '../models/todo.dart';
+import '../services/notification_service.dart';
 
 class TodoListViewModel extends ChangeNotifier {
+  final NotificationService notificationService;
   final List<Todo> _todos;
 
-  // TodoListViewModel(this._todos);
-  TodoListViewModel()
+  TodoListViewModel({required this.notificationService})
       : _todos = [
           Todo(
             id: '1',
             title: 'Complete project report',
             dueDate: DateTime.now().add(const Duration(days: 1)),
-            remindMe: true,
             isCompleted: false,
           ),
           Todo(
             id: '2',
             title: 'Buy groceries',
             dueDate: DateTime.now().add(const Duration(days: 2)),
-            remindMe: false,
             isCompleted: false,
           ),
           Todo(
             id: '3',
             title: 'Attend team meeting',
             dueDate: DateTime.now().add(const Duration(hours: 3)),
-            remindMe: true,
             isCompleted: true,
           ),
         ];
@@ -70,11 +68,14 @@ class TodoListViewModel extends ChangeNotifier {
 
   void addTodo(Todo todo) {
     _todos.add(todo);
+    notificationService.scheduleNotification(todo);
     notifyListeners();
   }
 
   void addTodoAtBeginning(Todo todo) {
     _todos.insert(0, todo);
+    notificationService.scheduleNotification(todo);
+    notifyListeners();
   }
 
   void removeTodo(String id) {
@@ -90,5 +91,7 @@ class TodoListViewModel extends ChangeNotifier {
 
   void updateTodoStatus(String id, bool isCompleted) {
     final todo = _todos.firstWhere((todo) => todo.id == id);
+    todo.isCompleted = isCompleted;
+    notifyListeners();
   }
 }
