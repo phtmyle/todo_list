@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:todo_list/services/notification_service.dart';
 
+import '../main.dart';
 import '../models/repeat_frequency.dart';
 import '../models/todo.dart';
 import '../viewmodels/todolist_viewmodel.dart';
@@ -19,6 +20,8 @@ class TodoListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final customColors = Theme.of(context).extension<CustomColors>()!;
+
     return Card(
       color: Colors.white,
       margin: const EdgeInsets.symmetric(vertical: 8),
@@ -29,7 +32,9 @@ class TodoListTile extends StatelessWidget {
             todo.isCompleted
                 ? Icons.check_circle
                 : Icons.radio_button_unchecked,
-            color: todo.isCompleted ? Colors.blue : Colors.grey,
+            color: todo.isCompleted
+                ? customColors.setValueColor
+                : customColors.unsetValueColor,
           ),
         ),
         title: Text(
@@ -38,10 +43,12 @@ class TodoListTile extends StatelessWidget {
             decoration: todo.isCompleted
                 ? TextDecoration.lineThrough
                 : TextDecoration.none,
-            color: todo.isCompleted ? Colors.grey : Colors.black,
+            color: todo.isCompleted
+                ? customColors.setValueColor
+                : customColors.unsetValueColor,
           ),
         ),
-        trailing: const Icon(Icons.star_border, color: Colors.grey),
+        trailing: Icon(Icons.star_border, color: customColors.unsetValueColor),
       ),
     );
   }
@@ -596,22 +603,21 @@ class _TaskTitleField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final customColors = Theme.of(context).extension<CustomColors>()!;
+
     return Expanded(
       child: Row(
         children: [
-          // Circular Icon
-          const SizedBox(
-            width: 40,
-            height: 40,
-            child: Icon(Icons.circle_outlined, color: Color(0xFFEEEEEE)),
+          Icon(
+            Icons.radio_button_unchecked,
+            color: customColors.unsetValueColor,
           ),
           const SizedBox(width: 8),
           Expanded(
             child: TextField(
-              decoration: InputDecoration(
+              style: const TextStyle(color: Colors.black),
+              decoration: const InputDecoration(
                 hintText: 'Add a task',
-                border: InputBorder.none,
-                hintStyle: TextStyle(color: Colors.grey[300]),
               ),
               onChanged: onChanged,
             ),
@@ -653,7 +659,9 @@ class _DueDateControlState extends State<_DueDateControl> {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         height: 40,
         decoration: BoxDecoration(
-          color: dueDate != null ? const Color(0xFF5D70BD) : Colors.grey[200],
+          color: dueDate != null
+              ? Theme.of(context).colorScheme.primary
+              : Colors.grey[200],
           borderRadius: BorderRadius.circular(12),
         ),
         child: Row(

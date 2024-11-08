@@ -55,7 +55,7 @@ import 'package:todo_list/viewmodels/todolist_viewmodel.dart';
 import 'package:todo_list/views/todolist_view.dart';
 
 void main() {
-  runApp(MyApp());
+  runApp(const MyApp());
 }
 
 class MyApp extends StatefulWidget {
@@ -72,24 +72,35 @@ class _MyAppState extends State<MyApp> {
       title: 'Todo List',
       theme: ThemeData(
         primarySwatch: Colors.indigo,
-        textTheme: const TextTheme(
-          bodyLarge: TextStyle(color: Colors.white),
-          bodyMedium: TextStyle(color: Colors.white),
-          bodySmall: TextStyle(color: Colors.white),
-          headlineSmall: TextStyle(color: Colors.white),
-          headlineMedium: TextStyle(color: Colors.white),
-          headlineLarge: TextStyle(color: Colors.white),
-        ),
-        colorScheme: ColorScheme.fromSwatch().copyWith(
-          onPrimary: Colors.white,
-          onSecondary: Colors.white,
-          onSurface: Colors.white,
-          onBackground: Colors.white,
-          onError: Colors.white,
-        ),
+
         appBarTheme: const AppBarTheme(
           iconTheme: IconThemeData(color: Colors.white),
         ),
+        inputDecorationTheme: const InputDecorationTheme(
+          hintStyle: TextStyle(color: Colors.grey),
+          border: InputBorder.none,
+          labelStyle: TextStyle(color: Colors.black),
+        ),
+        textTheme: const TextTheme(
+          bodyLarge: TextStyle(color: Colors.white),
+          bodyMedium: TextStyle(color: Colors.white),
+          headlineLarge: TextStyle(color: Colors.white),
+          headlineMedium: TextStyle(color: Colors.white),
+          headlineSmall: TextStyle(color: Colors.white),
+          titleLarge: TextStyle(color: Colors.white),
+          titleMedium: TextStyle(color: Colors.white),
+          titleSmall: TextStyle(color: Colors.white),
+          labelLarge: TextStyle(color: Colors.white),
+          labelMedium: TextStyle(color: Colors.white),
+          labelSmall: TextStyle(color: Colors.white),
+        ),
+        // Define custom colors
+        extensions: const <ThemeExtension<dynamic>>[
+          CustomColors(
+            unsetValueColor: Colors.grey,
+            setValueColor: Colors.blue,
+          ),
+        ],
       ),
       home: IconTheme(
         data: const IconThemeData(color: Colors.white),
@@ -100,6 +111,38 @@ class _MyAppState extends State<MyApp> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class CustomColors extends ThemeExtension<CustomColors> {
+  final Color unsetValueColor;
+  final Color setValueColor;
+
+  const CustomColors({
+    required this.unsetValueColor,
+    required this.setValueColor,
+  });
+
+  @override
+  CustomColors copyWith({
+    Color? unsetValueColor,
+    Color? setValueColor,
+  }) {
+    return CustomColors(
+      unsetValueColor: unsetValueColor ?? this.unsetValueColor,
+      setValueColor: setValueColor ?? this.setValueColor,
+    );
+  }
+
+  @override
+  CustomColors lerp(ThemeExtension<CustomColors>? other, double t) {
+    if (other is! CustomColors) {
+      return this;
+    }
+    return CustomColors(
+      unsetValueColor: Color.lerp(unsetValueColor, other.unsetValueColor, t)!,
+      setValueColor: Color.lerp(setValueColor, other.setValueColor, t)!,
     );
   }
 }
