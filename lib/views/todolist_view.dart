@@ -212,11 +212,26 @@ class TodoListViewState extends State<TodoListView> {
             ],
           ),
         ),
-        floatingActionButton: FloatingActionButton(
-          onPressed: _addTodo,
-          tooltip: 'Add Todo',
-          backgroundColor: const Color(0xFF5C6BC0),
-          child: const Icon(Icons.add, size: 32),
+        floatingActionButton: GestureDetector(
+          onTap: _addTodo,
+          child: Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.2),
+                  spreadRadius: 2,
+                  blurRadius: 6,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: Icon(Icons.add,
+                size: 32, color: Theme.of(context).primaryColor),
+          ),
         ),
       ),
     );
