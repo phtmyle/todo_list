@@ -83,14 +83,6 @@ class TodoListViewState extends State<TodoListView> {
             todo.dueDate!.month == DateTime.now().month &&
             todo.dueDate!.day == DateTime.now().day;
       }).toList();
-    } else if (selectedCategory == 'Tomorrow') {
-      filteredTodos = todos.where((todo) {
-        final tomorrow = DateTime.now().add(const Duration(days: 1));
-        return todo.dueDate != null &&
-            todo.dueDate!.year == tomorrow.year &&
-            todo.dueDate!.month == tomorrow.month &&
-            todo.dueDate!.day == tomorrow.day;
-      }).toList();
     } else if (selectedCategory == 'Upcoming') {
       filteredTodos = todos.where((todo) {
         return todo.dueDate == null ||
@@ -113,20 +105,30 @@ class TodoListViewState extends State<TodoListView> {
         backgroundColor: const Color(0xFF5C6BC0),
         elevation: 0,
         actions: [
-          DropdownButton<String>(
-            value: selectedCategory,
-            items: <String>['All', 'Today', 'Tomorrow', 'Upcoming']
-                .map((String value) {
-              return DropdownMenuItem<String>(
-                value: value,
-                child: Text(value),
-              );
-            }).toList(),
-            onChanged: (String? newValue) {
-              setState(() {
-                selectedCategory = newValue!;
-              });
-            },
+          Row(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.filter_list),
+                onPressed: () {},
+              ),
+              DropdownButtonHideUnderline(
+                child: DropdownButton<String>(
+                  value: selectedCategory,
+                  items:
+                      <String>['All', 'Today', 'Upcoming'].map((String value) {
+                    return DropdownMenuItem<String>(
+                      value: value,
+                      child: Text(value),
+                    );
+                  }).toList(),
+                  onChanged: (String? newValue) {
+                    setState(() {
+                      selectedCategory = newValue!;
+                    });
+                  },
+                ),
+              ),
+            ],
           ),
           const SizedBox(width: 12),
           const Icon(Icons.more_vert, size: 28),
