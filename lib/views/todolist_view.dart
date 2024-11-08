@@ -75,18 +75,22 @@ class _TodoListTileState extends State<TodoListTile> {
                         : null,
                   ),
                 ),
-                trailing: IconButton(
-                  icon: Icon(
-                    widget.todo.isImportant ? Icons.star : Icons.star_border,
-                    color: widget.todo.isImportant
-                        ? Colors.yellow
-                        : customColors.unsetValueColor,
-                  ),
-                  onPressed: () {
-                    Provider.of<TodoListViewModel>(context, listen: false)
-                        .toggleTodoImportance(widget.todo);
-                  },
-                ),
+                trailing: widget.todo.isCompleted
+                    ? null
+                    : IconButton(
+                        icon: Icon(
+                          widget.todo.isImportant
+                              ? Icons.star
+                              : Icons.star_border,
+                          color: widget.todo.isImportant
+                              ? Colors.yellow
+                              : customColors.unsetValueColor,
+                        ),
+                        onPressed: () {
+                          Provider.of<TodoListViewModel>(context, listen: false)
+                              .toggleTodoImportance(widget.todo);
+                        },
+                      ),
               ),
             ),
           ),
