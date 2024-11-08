@@ -25,20 +25,16 @@ class TodoListTile extends StatefulWidget {
 
 class _TodoListTileState extends State<TodoListTile> {
   bool showTrashIcon = false;
+  bool showDetails = false;
   OverlayEntry? _overlayEntry;
 
   void _showOverlay() {
     _overlayEntry = OverlayEntry(
       builder: (context) => Positioned.fill(
         child: GestureDetector(
-          onTap: () {
-            _hideTrashIcon();
-          },
+          onTap: _hideAllOverlays,
           behavior: HitTestBehavior.opaque,
-          child: Container(
-            color:
-                Colors.transparent, // Invisible overlay to detect outside taps
-          ),
+          child: Container(color: Colors.transparent),
         ),
       ),
     );
@@ -50,24 +46,57 @@ class _TodoListTileState extends State<TodoListTile> {
     _overlayEntry = null;
   }
 
-  void _showTrashIcon() {
-    setState(() {
-      showTrashIcon = true;
-    });
-    _showOverlay(); // Show overlay when trash icon is displayed
-  }
-
-  void _hideTrashIcon() {
+  void _hideAllOverlays() {
     setState(() {
       showTrashIcon = false;
+      showDetails = false;
     });
-    _hideOverlay(); // Hide overlay when trash icon is hidden
+    _hideOverlay();
   }
 
-  @override
-  void dispose() {
-    _hideOverlay(); // Clean up overlay on dispose
-    super.dispose();
+  void _toggleTrashIcon() {
+    setState(() {
+      showTrashIcon = !showTrashIcon;
+      if (showTrashIcon) {
+        showDetails = false; // Hide details if showing trash
+        _showOverlay();
+      } else {
+        _hideOverlay();
+      }
+    });
+  }
+
+  void _toggleDetails() {
+    setState(() {
+      showDetails = !showDetails;
+      if (showDetails) {
+        showTrashIcon = false; // Hide trash if showing details
+        _showOverlay();
+      } else {
+        _hideOverlay();
+      }
+    });
+  }
+
+  Widget _buildDetailText(String label, String? value, bool isCompleted,
+      CustomColors customColors) {
+    if (value == null || value.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 4.0),
+      child: Text(
+        "$label: $value",
+        style: TextStyle(
+          color: isCompleted ? customColors.unsetValueColor : Colors.black,
+          fontSize: 14,
+          decoration:
+              isCompleted ? TextDecoration.lineThrough : TextDecoration.none,
+          decorationColor: customColors.unsetValueColor,
+        ),
+      ),
+    );
   }
 
   @override
@@ -75,8 +104,8 @@ class _TodoListTileState extends State<TodoListTile> {
     final customColors = Theme.of(context).extension<CustomColors>()!;
 
     return GestureDetector(
-      // Show trash icon on long press
-      onLongPress: _showTrashIcon,
+      onLongPress: _toggleTrashIcon, // Toggle trash icon on long press
+      onTap: _toggleDetails, // Toggle details on tap
       child: Stack(
         children: [
           // Main content of the tile
@@ -98,19 +127,44 @@ class _TodoListTileState extends State<TodoListTile> {
                         : customColors.unsetValueColor,
                   ),
                 ),
-                title: Text(
-                  widget.todo.title,
-                  style: TextStyle(
-                    decoration: widget.todo.isCompleted
-                        ? TextDecoration.lineThrough
-                        : TextDecoration.none,
-                    color: widget.todo.isCompleted
-                        ? customColors.unsetValueColor
-                        : Colors.black,
-                    decorationColor: widget.todo.isCompleted
-                        ? customColors.unsetValueColor
-                        : null,
-                  ),
+                title: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.todo.title,
+                      style: TextStyle(
+                        color: widget.todo.isCompleted
+                            ? customColors.unsetValueColor
+                            : Colors.black,
+                        decoration: widget.todo.isCompleted
+                            ? TextDecoration.lineThrough
+                            : TextDecoration.none,
+                        decorationColor: customColors.unsetValueColor,
+                      ),
+                    ),
+                    if (showDetails) ...[
+                      _buildDetailText(
+                          "Due Date",
+                          widget.todo.dueDate
+                              ?.toLocal()
+                              .toString()
+                              .split(' ')[0],
+                          widget.todo.isCompleted,
+                          customColors),
+                      _buildDetailText(
+                          "Due Time",
+                          widget.todo.dueTime?.format(context),
+                          widget.todo.isCompleted,
+                          customColors),
+                      _buildDetailText(
+                          "Repeat",
+                          widget.todo.repeat != RepeatFrequency.none
+                              ? widget.todo.repeat.displayName
+                              : null,
+                          widget.todo.isCompleted,
+                          customColors),
+                    ],
+                  ],
                 ),
                 trailing: widget.todo.isCompleted
                     ? null
@@ -143,7 +197,7 @@ class _TodoListTileState extends State<TodoListTile> {
                 onPressed: () {
                   Provider.of<TodoListViewModel>(context, listen: false)
                       .removeTodo(widget.todo.id);
-                  _hideTrashIcon(); // Hide trash icon after deletion
+                  _hideAllOverlays(); // Hide trash icon after deletion
                 },
               ),
             ),
@@ -408,11 +462,11 @@ class TodoListViewState extends State<TodoListView> {
       background: Container(
         color: Colors.green,
         alignment: Alignment.centerLeft, // Align to left for visibility
-        child: Padding(
-          padding: const EdgeInsets.only(left: 20.0), // Place padding on left
+        child: const Padding(
+          padding: EdgeInsets.only(left: 20.0), // Place padding on left
           child: Row(
             mainAxisAlignment: MainAxisAlignment.start,
-            children: const [
+            children: [
               Icon(Icons.check, color: Colors.white),
               SizedBox(width: 8),
               Text('Complete', style: TextStyle(color: Colors.white)),
@@ -423,11 +477,11 @@ class TodoListViewState extends State<TodoListView> {
       secondaryBackground: Container(
         color: Colors.red,
         alignment: Alignment.centerRight, // Align to right for visibility
-        child: Padding(
-          padding: const EdgeInsets.only(right: 20.0), // Place padding on right
+        child: const Padding(
+          padding: EdgeInsets.only(right: 20.0), // Place padding on right
           child: Row(
             mainAxisAlignment: MainAxisAlignment.end,
-            children: const [
+            children: [
               Text('Delete', style: TextStyle(color: Colors.white)),
               SizedBox(width: 8),
               Icon(Icons.delete, color: Colors.white),
@@ -707,8 +761,9 @@ class _AddTodoBottomSheetState extends State<AddTodoBottomSheet> {
                   const SizedBox(width: 16),
                   RepeatControl(
                     onRepeatOptionChanged: (selectedOption) {
-                      print(
-                          'Selected Repeat Option: ${selectedOption?.displayText}');
+                      setState(() {
+                        repeat = selectedOption ?? RepeatFrequency.none;
+                      });
                     },
                   ),
                 ],
@@ -930,7 +985,7 @@ class _SetTimeControlState extends State<_SetTimeControl> {
 
 // Repeat Control Widget
 class RepeatControl extends StatefulWidget {
-  final ValueChanged<RepeatOption?> onRepeatOptionChanged;
+  final ValueChanged<RepeatFrequency?> onRepeatOptionChanged;
 
   const RepeatControl({super.key, required this.onRepeatOptionChanged});
 
@@ -939,7 +994,7 @@ class RepeatControl extends StatefulWidget {
 }
 
 class _RepeatControlState extends State<RepeatControl> {
-  RepeatOption? _selectedOption;
+  RepeatFrequency? _selectedOption;
 
   @override
   Widget build(BuildContext context) {
@@ -967,7 +1022,7 @@ class _RepeatControlState extends State<RepeatControl> {
                 _showRepeatOptions(context);
               },
               child: Text(
-                _selectedOption?.displayText ?? 'Repeat',
+                _selectedOption?.displayName ?? 'Repeat',
                 style: TextStyle(
                   color: _selectedOption != null ? Colors.white : Colors.grey,
                 ),
@@ -1000,14 +1055,14 @@ class _RepeatControlState extends State<RepeatControl> {
     double x = offset.dx;
     double y = offset.dy + renderBox.size.height;
 
-    showMenu<RepeatOption>(
+    showMenu<RepeatFrequency>(
       context: context,
       position: RelativeRect.fromLTRB(x, y, 0, 0),
       items: [
-        _buildPopupMenuItem(RepeatOption.daily),
-        _buildPopupMenuItem(RepeatOption.weekly),
-        _buildPopupMenuItem(RepeatOption.monthly),
-        _buildPopupMenuItem(RepeatOption.yearly),
+        _buildPopupMenuItem(RepeatFrequency.daily),
+        _buildPopupMenuItem(RepeatFrequency.weekly),
+        _buildPopupMenuItem(RepeatFrequency.monthly),
+        _buildPopupMenuItem(RepeatFrequency.yearly),
       ],
       color: Colors.white,
     ).then((value) {
@@ -1020,29 +1075,29 @@ class _RepeatControlState extends State<RepeatControl> {
     });
   }
 
-  PopupMenuItem<RepeatOption> _buildPopupMenuItem(RepeatOption option) {
-    return PopupMenuItem<RepeatOption>(
+  PopupMenuItem<RepeatFrequency> _buildPopupMenuItem(RepeatFrequency option) {
+    return PopupMenuItem<RepeatFrequency>(
       value: option,
       child: Row(
         children: [
           getIconForRepeat(option),
           const SizedBox(width: 8),
-          Text(option.displayText),
+          Text(option.displayName),
         ],
       ),
     );
   }
 
-  // Method to get the icon for each repeat option
-  Widget getIconForRepeat(RepeatOption option) {
+  // Method to get the icon for each repeat type
+  Widget getIconForRepeat(RepeatFrequency option) {
     switch (option) {
-      case RepeatOption.daily:
+      case RepeatFrequency.daily:
         return const Icon(Icons.wb_sunny);
-      case RepeatOption.weekly:
+      case RepeatFrequency.weekly:
         return const Icon(Icons.calendar_view_week);
-      case RepeatOption.monthly:
+      case RepeatFrequency.monthly:
         return const Icon(Icons.calendar_today);
-      case RepeatOption.yearly:
+      case RepeatFrequency.yearly:
         return const Icon(Icons.event);
       default:
         return const SizedBox();
