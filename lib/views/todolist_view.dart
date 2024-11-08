@@ -89,7 +89,9 @@ class _TodoListTileState extends State<TodoListTile> {
       child: Text(
         "$label: $value",
         style: TextStyle(
-          color: isCompleted ? customColors.unsetValueColor : Colors.black,
+          color: isCompleted
+              ? customColors.unsetValueColor.withOpacity(0.5)
+              : Colors.black.withOpacity(0.5),
           fontSize: 14,
           decoration:
               isCompleted ? TextDecoration.lineThrough : TextDecoration.none,
@@ -174,7 +176,7 @@ class _TodoListTileState extends State<TodoListTile> {
                               ? Icons.star
                               : Icons.star_border,
                           color: widget.todo.isImportant
-                              ? Colors.yellow
+                              ? Colors.amber
                               : customColors.unsetValueColor,
                         ),
                         onPressed: () {
