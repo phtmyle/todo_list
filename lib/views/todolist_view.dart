@@ -285,20 +285,6 @@ class _AddTodoBottomSheetState extends State<AddTodoBottomSheet> {
   DateTime? reminderDate;
   RepeatFrequency repeat = RepeatFrequency.none;
 
-  Future<void> _selectDate(BuildContext context) async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: dueDate ?? DateTime.now(),
-      firstDate: DateTime.now(),
-      lastDate: DateTime(2101),
-    );
-    if (picked != null && picked != dueDate) {
-      setState(() {
-        dueDate = picked;
-      });
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -326,7 +312,7 @@ class _AddTodoBottomSheetState extends State<AddTodoBottomSheet> {
                 _TaskTitleField(
                   onChanged: (value) {
                     setState(() {
-                      title = value; // Update title
+                      title = value;
                     });
                   },
                 ),
@@ -335,7 +321,6 @@ class _AddTodoBottomSheetState extends State<AddTodoBottomSheet> {
                     onTap: () {
                       if (title.isNotEmpty) {
                         widget.onAdd(title, dueDate, remindMe, repeat);
-                        // Navigator.of(context).pop();
                       }
                     },
                     child: Container(
@@ -365,7 +350,11 @@ class _AddTodoBottomSheetState extends State<AddTodoBottomSheet> {
                 children: [
                   _DueDateControl(
                     dueDate: dueDate,
-                    onTap: () => _selectDate(context),
+                    onDateChanged: (date) {
+                      setState(() {
+                        dueDate = date;
+                      });
+                    },
                   ),
                   const SizedBox(width: 16),
                   _ReminderControl(
@@ -482,45 +471,74 @@ class _TaskTitleField extends StatelessWidget {
 }
 
 // Due Date Control Widget
-class _DueDateControl extends StatelessWidget {
+class _DueDateControl extends StatefulWidget {
   final DateTime? dueDate;
-  final VoidCallback onTap;
+  final ValueChanged<DateTime?> onDateChanged;
 
-  const _DueDateControl({required this.dueDate, required this.onTap});
+  const _DueDateControl({
+    required this.dueDate,
+    required this.onDateChanged,
+  });
+
+  @override
+  _DueDateControlState createState() => _DueDateControlState();
+}
+
+class _DueDateControlState extends State<_DueDateControl> {
+  DateTime? dueDate;
+
+  @override
+  void initState() {
+    super.initState();
+    dueDate = widget.dueDate;
+  }
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: () => _selectDate(context),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         height: 40,
         decoration: BoxDecoration(
-          color: dueDate != null
-              ? const Color(0xFF5D70BD)
-              : Colors.grey[200], // Background color
-          borderRadius: BorderRadius.circular(12), // Rounded corners
+          color: dueDate != null ? const Color(0xFF5D70BD) : Colors.grey[200],
+          borderRadius: BorderRadius.circular(12),
         ),
         child: Row(
           children: [
-            Icon(Icons.calendar_today,
-                size: 24,
-                color:
-                    dueDate != null ? Colors.white : Colors.grey), // Icon color
+            Icon(
+              Icons.calendar_today,
+              size: 24,
+              color: dueDate != null ? Colors.white : Colors.grey,
+            ),
             const SizedBox(width: 8),
             Text(
               dueDate != null
-                  ? 'Due ${dueDate!.toLocal().toString().split(' ')[0]}' // Display date
-                  : 'Add due date', // Placeholder text
+                  ? 'Due ${dueDate!.toLocal().toString().split(' ')[0]}'
+                  : 'Add due date',
               style: TextStyle(
-                color:
-                    dueDate != null ? Colors.white : Colors.grey, // Text color
+                color: dueDate != null ? Colors.white : Colors.grey,
               ),
             ),
           ],
         ),
       ),
     );
+  }
+
+  Future<void> _selectDate(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: dueDate ?? DateTime.now(),
+      firstDate: DateTime.now(),
+      lastDate: DateTime(2101),
+    );
+    if (picked != null && picked != dueDate) {
+      setState(() {
+        dueDate = picked;
+      });
+      widget.onDateChanged(dueDate);
+    }
   }
 }
 
@@ -555,7 +573,7 @@ class _ReminderControl extends StatelessWidget {
             Icon(
               Icons.notifications,
               size: 24,
-              color: remindMe ? Colors.white : Colors.grey, // Mimic color logic
+              color: remindMe ? Colors.white : Colors.grey,
             ),
             const SizedBox(width: 8),
             GestureDetector(
@@ -608,18 +626,16 @@ class _ReminderControl extends StatelessWidget {
     });
   }
 
-// Method to build a PopupMenuItem
   PopupMenuItem<ReminderOption> _buildPopupMenuItem(ReminderOption option,
       [DateTime? date]) {
     return PopupMenuItem<ReminderOption>(
       value: option,
       child: Row(
         children: [
-          getIconForReminder(option), // Use the method to get the icon
+          getIconForReminder(option),
           const SizedBox(width: 8),
           Text(
             option.displayText,
-            style: const TextStyle(fontWeight: FontWeight.w300), // Thin style
           ),
           if (date != null) ...[
             const Spacer(),
@@ -664,30 +680,29 @@ Widget getIconForReminder(ReminderOption option) {
       return const Icon(Icons.arrow_circle_right_outlined); // Material icon
     case ReminderOption.nextWeek:
       return SvgPicture.asset(
-        'assets/icons/double-right-sign-circle-svgrepo-com.svg', // Update the path as necessary
-        width: 24, // Set the desired width
-        height: 24, // Set the desired height
+        'assets/icons/double-right-sign-circle-svgrepo-com.svg',
+        width: 24,
+        height: 24,
       );
     case ReminderOption.pickDateTime:
       return const Icon(Icons.date_range); // Material icon
     default:
-      return const SizedBox(); // Return an empty widget for default case
+      return const SizedBox();
   }
 }
 
 // Repeat Control Widget
 class RepeatControl extends StatefulWidget {
-  final ValueChanged<RepeatOption?>
-      onChanged; // Callback for when the option changes
+  final ValueChanged<RepeatOption?> onChanged;
 
-  const RepeatControl({super.key, required this.onChanged}); // Constructor
+  const RepeatControl({super.key, required this.onChanged});
 
   @override
   State<RepeatControl> createState() => _RepeatControlState();
 }
 
 class _RepeatControlState extends State<RepeatControl> {
-  RepeatOption? _selectedOption; // State variable to hold the selected option
+  RepeatOption? _selectedOption;
 
   @override
   Widget build(BuildContext context) {
@@ -748,9 +763,9 @@ class _RepeatControlState extends State<RepeatControl> {
     ).then((value) {
       if (value != null) {
         setState(() {
-          _selectedOption = value; // Update the selected option
+          _selectedOption = value;
         });
-        widget.onChanged(value); // Call the onChanged callback
+        widget.onChanged(value);
       }
     });
   }
@@ -760,7 +775,7 @@ class _RepeatControlState extends State<RepeatControl> {
       value: option,
       child: Row(
         children: [
-          getIconForRepeat(option), // Use the method to get the icon
+          getIconForRepeat(option),
           const SizedBox(width: 8),
           Text(option.displayText),
         ],
@@ -772,16 +787,15 @@ class _RepeatControlState extends State<RepeatControl> {
   Widget getIconForRepeat(RepeatOption option) {
     switch (option) {
       case RepeatOption.daily:
-        return const Icon(Icons.wb_sunny); // Sun icon for Daily
+        return const Icon(Icons.wb_sunny);
       case RepeatOption.weekly:
-        return const Icon(
-            Icons.calendar_view_week); // Weekly view calendar icon
+        return const Icon(Icons.calendar_view_week);
       case RepeatOption.monthly:
-        return const Icon(Icons.calendar_today); // Calendar icon for Monthly
+        return const Icon(Icons.calendar_today);
       case RepeatOption.yearly:
-        return const Icon(Icons.event); // Event icon for Yearly
+        return const Icon(Icons.event);
       default:
-        return const SizedBox(); // Return an empty widget for default case
+        return const SizedBox();
     }
   }
 }
