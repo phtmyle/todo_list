@@ -133,8 +133,6 @@ class TodoListViewState extends State<TodoListView> {
       child: Scaffold(
         backgroundColor: Theme.of(context).primaryColor,
         appBar: AppBar(
-          title: const Text('Todo List',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
           backgroundColor: Colors.transparent,
           elevation: 0,
           actions: [
@@ -184,6 +182,19 @@ class TodoListViewState extends State<TodoListView> {
           color: Theme.of(context).primaryColor,
           child: Column(
             children: [
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                child: Row(
+                  children: [
+                    SizedBox(width: 8),
+                    Text(
+                      'Daily',
+                      style:
+                          TextStyle(fontSize: 36, fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+              ),
               Expanded(
                 child: ListView(
                   padding: const EdgeInsets.symmetric(vertical: 16),
