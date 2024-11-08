@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-
-import 'repeat_frequency.dart';
+import 'package:todo_list/models/repeat_frequency.dart';
 
 class Todo {
   final String id;
@@ -9,6 +8,7 @@ class Todo {
   final TimeOfDay? dueTime;
   final RepeatFrequency repeat;
   bool isCompleted;
+  bool isImportant; //
 
   Todo({
     required this.id,
@@ -17,5 +17,6 @@ class Todo {
     this.dueTime,
     this.repeat = RepeatFrequency.none,
     this.isCompleted = false,
+    this.isImportant = false, // Initialize it
   });
 }

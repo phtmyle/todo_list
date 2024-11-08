@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:provider/provider.dart';
 import 'package:todo_list/services/notification_service.dart';
 
 import '../main.dart';
@@ -8,7 +9,7 @@ import '../models/repeat_frequency.dart';
 import '../models/todo.dart';
 import '../viewmodels/todolist_viewmodel.dart';
 
-class TodoListTile extends StatelessWidget {
+class TodoListTile extends StatefulWidget {
   final Todo todo;
   final Function(Todo) onToggleCompletion;
 
@@ -19,37 +20,92 @@ class TodoListTile extends StatelessWidget {
   });
 
   @override
+  State<TodoListTile> createState() => _TodoListTileState();
+}
+
+class _TodoListTileState extends State<TodoListTile> {
+  bool showTrashIcon = false;
+
+  @override
   Widget build(BuildContext context) {
     final customColors = Theme.of(context).extension<CustomColors>()!;
 
-    return Card(
-      color: Colors.white,
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      child: ListTile(
-        leading: GestureDetector(
-          onTap: () => onToggleCompletion(todo),
-          child: Icon(
-            todo.isCompleted
-                ? Icons.check_circle
-                : Icons.radio_button_unchecked,
-            color: todo.isCompleted
-                ? Theme.of(context).primaryColor
-                : customColors.unsetValueColor,
+    return GestureDetector(
+      onLongPress: () {
+        setState(() {
+          showTrashIcon = true;
+        });
+      },
+      onTap: () {
+        setState(() {
+          showTrashIcon = false;
+        });
+      },
+      child: Stack(
+        children: [
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            margin: const EdgeInsets.symmetric(vertical: 8),
+            padding: EdgeInsets.only(right: showTrashIcon ? 48 : 0),
+            child: Card(
+              color: Colors.white,
+              child: ListTile(
+                leading: GestureDetector(
+                  onTap: () => widget.onToggleCompletion(widget.todo),
+                  child: Icon(
+                    widget.todo.isCompleted
+                        ? Icons.check_circle
+                        : Icons.radio_button_unchecked,
+                    color: widget.todo.isCompleted
+                        ? Theme.of(context).primaryColor
+                        : customColors.unsetValueColor,
+                  ),
+                ),
+                title: Text(
+                  widget.todo.title,
+                  style: TextStyle(
+                    decoration: widget.todo.isCompleted
+                        ? TextDecoration.lineThrough
+                        : TextDecoration.none,
+                    color: widget.todo.isCompleted
+                        ? customColors.unsetValueColor
+                        : Colors.black,
+                    decorationColor: widget.todo.isCompleted
+                        ? customColors.unsetValueColor
+                        : null,
+                  ),
+                ),
+                trailing: IconButton(
+                  icon: Icon(
+                    widget.todo.isImportant ? Icons.star : Icons.star_border,
+                    color: widget.todo.isImportant
+                        ? Colors.yellow
+                        : customColors.unsetValueColor,
+                  ),
+                  onPressed: () {
+                    Provider.of<TodoListViewModel>(context, listen: false)
+                        .toggleTodoImportance(widget.todo);
+                  },
+                ),
+              ),
+            ),
           ),
-        ),
-        title: Text(
-          todo.title,
-          style: TextStyle(
-            decoration: todo.isCompleted
-                ? TextDecoration.lineThrough
-                : TextDecoration.none,
-            color:
-                todo.isCompleted ? customColors.unsetValueColor : Colors.black,
-            decorationColor:
-                todo.isCompleted ? customColors.unsetValueColor : null,
-          ),
-        ),
-        trailing: Icon(Icons.star_border, color: customColors.unsetValueColor),
+          if (showTrashIcon)
+            Positioned(
+              right: 0,
+              top: 0,
+              bottom: 0,
+              child: IconButton(
+                icon: const Icon(Icons.delete, color: Colors.red),
+                onPressed: () {
+                  setState(() {
+                    Provider.of<TodoListViewModel>(context, listen: false)
+                        .removeTodo(widget.todo.id);
+                  });
+                },
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -254,9 +310,11 @@ class TodoListViewState extends State<TodoListView> {
   List<Todo> _filterTodosByCategory(List<Todo> todos, String category) {
     DateTime now = DateTime.now();
     DateTime tomorrow = now.add(const Duration(days: 1));
+    List<Todo> filteredTodos;
+
     switch (category) {
       case 'Today':
-        return todos
+        filteredTodos = todos
             .where((todo) =>
                 !todo.isCompleted &&
                 todo.dueDate != null &&
@@ -264,8 +322,9 @@ class TodoListViewState extends State<TodoListView> {
                 todo.dueDate!.month == now.month &&
                 todo.dueDate!.day == now.day)
             .toList();
+        break;
       case 'Tomorrow':
-        return todos
+        filteredTodos = todos
             .where((todo) =>
                 !todo.isCompleted &&
                 todo.dueDate != null &&
@@ -273,15 +332,30 @@ class TodoListViewState extends State<TodoListView> {
                 todo.dueDate!.month == tomorrow.month &&
                 todo.dueDate!.day == tomorrow.day)
             .toList();
+        break;
       case 'Upcoming':
-        return todos
+        filteredTodos = todos
             .where((todo) =>
                 !todo.isCompleted &&
                 (todo.dueDate == null || todo.dueDate!.isAfter(now)))
             .toList();
+        break;
       default: // 'All'
-        return todos;
+        filteredTodos = todos;
     }
+
+    filteredTodos.sort((a, b) {
+      if (a.isImportant && !b.isImportant) return -1;
+      if (!a.isImportant && b.isImportant) return 1;
+      if (a.dueDate == null && b.dueDate != null) return 1;
+      if (a.dueDate != null && b.dueDate == null) return -1;
+      if (a.dueDate != null && b.dueDate != null) {
+        return a.dueDate!.compareTo(b.dueDate!);
+      }
+      return 0;
+    });
+
+    return filteredTodos;
   }
 
   Widget _buildDismissibleTodoItem(Todo todo) {
