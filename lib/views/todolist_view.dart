@@ -138,44 +138,38 @@ class TodoListViewState extends State<TodoListView> {
           backgroundColor: Colors.transparent,
           elevation: 0,
           actions: [
-            Row(
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.filter_list),
-                  onPressed: () {},
+            DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                value: selectedCategory,
+                isDense: true,
+                icon: const ColorFiltered(
+                  colorFilter: ColorFilter.mode(Colors.white, BlendMode.srcIn),
+                  child: Icon(Icons.filter_list),
                 ),
-                DropdownButtonHideUnderline(
-                  child: DropdownButton<String>(
-                    value: selectedCategory,
-                    isDense: true,
-                    icon: const SizedBox.shrink(),
-                    items: <String>['All', 'Today', 'Upcoming']
-                        .map((String value) {
-                      return DropdownMenuItem<String>(
-                        value: value,
-                        child: Text(
-                          value,
-                          style: const TextStyle(color: Colors.black),
-                        ),
-                      );
-                    }).toList(),
-                    onChanged: (String? newValue) {
-                      setState(() {
-                        selectedCategory = newValue!;
-                      });
-                    },
-                    selectedItemBuilder: (BuildContext context) {
-                      return <String>['All', 'Today', 'Upcoming']
-                          .map((String value) {
-                        return Text(
-                          value,
-                          style: const TextStyle(color: Colors.white),
-                        );
-                      }).toList();
-                    },
-                  ),
-                )
-              ],
+                items: <String>['All', 'Today', 'Upcoming'].map((String value) {
+                  return DropdownMenuItem<String>(
+                    value: value,
+                    child: Text(
+                      value,
+                      style: const TextStyle(color: Colors.black),
+                    ),
+                  );
+                }).toList(),
+                onChanged: (String? newValue) {
+                  setState(() {
+                    selectedCategory = newValue!;
+                  });
+                },
+                selectedItemBuilder: (BuildContext context) {
+                  return <String>['All', 'Today', 'Upcoming']
+                      .map((String value) {
+                    return Text(
+                      value,
+                      style: const TextStyle(color: Colors.white),
+                    );
+                  }).toList();
+                },
+              ),
             ),
             const SizedBox(width: 12),
             IconButton(
@@ -203,9 +197,10 @@ class TodoListViewState extends State<TodoListView> {
                             .toList(),
                       ),
                     ),
-                    const Divider(thickness: 1),
-                    if (completedTodos.isNotEmpty)
+                    if (completedTodos.isNotEmpty) ...[
+                      if (pendingTodos.isNotEmpty) const Divider(thickness: 1),
                       _buildCompletedTasksSection(completedTodos),
+                    ]
                   ],
                 ),
               )
