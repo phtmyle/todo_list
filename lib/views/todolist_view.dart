@@ -53,7 +53,7 @@ class TodoListViewState extends State<TodoListView> {
               remindMe: remindMe,
               repeat: repeat,
             );
-            widget.viewModel.addTodo(newTodo);
+            widget.viewModel.addTodoAtBeginning(newTodo);
             if (remindMe) {
               notificationService.scheduleNotification(newTodo);
             }
@@ -335,7 +335,7 @@ class _AddTodoBottomSheetState extends State<AddTodoBottomSheet> {
                   onTap: () {
                     if (title.isNotEmpty) {
                       widget.onAdd(title, dueDate, remindMe, repeat);
-                      Navigator.of(context).pop();
+                      // Navigator.of(context).pop();
                     }
                   },
                   child: Container(
@@ -347,8 +347,7 @@ class _AddTodoBottomSheetState extends State<AddTodoBottomSheet> {
                           ? const Color(0xFFC2C2C2)
                           : const Color(0xFF2665EE), // Color based on input
                     ),
-                    child: const Icon(Icons.arrow_upward,
-                        color: Colors.white), // Up arrow icon
+                    child: const Icon(Icons.arrow_upward, color: Colors.white),
                   ),
                 ),
               ],
@@ -788,7 +787,6 @@ enum RepeatOption {
   yearly,
 }
 
-// Extension for the RepeatOption enum
 extension RepeatOptionExtension on RepeatOption {
   String get displayText {
     switch (this) {

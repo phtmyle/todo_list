@@ -73,6 +73,10 @@ class TodoListViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  void addTodoAtBeginning(Todo todo) {
+    _todos.insert(0, todo);
+  }
+
   void removeTodo(String id) {
     _todos.removeWhere((todo) => todo.id == id);
     notifyListeners();
