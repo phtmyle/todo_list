@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:intl/intl.dart';
@@ -402,7 +403,7 @@ class _AddTodoBottomSheetState extends State<AddTodoBottomSheet> {
                   ),
                   const SizedBox(width: 16),
                   RepeatControl(
-                    onChanged: (selectedOption) {
+                    onRepeatOptionChanged: (selectedOption) {
                       print(
                           'Selected Repeat Option: ${selectedOption?.displayText}');
                     },
@@ -501,6 +502,21 @@ class _DueDateControlState extends State<_DueDateControl> {
                 color: dueDate != null ? Colors.white : Colors.grey,
               ),
             ),
+            const SizedBox(width: 8),
+            if (dueDate != null)
+              GestureDetector(
+                onTap: () {
+                  setState(() {
+                    dueDate = null;
+                  });
+                  widget.onDateChanged(null);
+                },
+                child: const Icon(
+                  CupertinoIcons.clear_circled,
+                  size: 20,
+                  color: Colors.white,
+                ),
+              ),
           ],
         ),
       ),
@@ -573,6 +589,20 @@ class _SetTimeControlState extends State<_SetTimeControl> {
                 color: dueTime != null ? Colors.white : Colors.grey,
               ),
             ),
+            const SizedBox(width: 8),
+            if (dueTime != null)
+              GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      dueTime = null;
+                    });
+                    widget.onTimeChanged(null);
+                  },
+                  child: const Icon(
+                    CupertinoIcons.clear_circled,
+                    size: 20,
+                    color: Colors.white,
+                  )),
           ],
         ),
       ),
@@ -750,9 +780,9 @@ Widget getIconForReminder(ReminderOption option) {
 
 // Repeat Control Widget
 class RepeatControl extends StatefulWidget {
-  final ValueChanged<RepeatOption?> onChanged;
+  final ValueChanged<RepeatOption?> onRepeatOptionChanged;
 
-  const RepeatControl({super.key, required this.onChanged});
+  const RepeatControl({super.key, required this.onRepeatOptionChanged});
 
   @override
   State<RepeatControl> createState() => _RepeatControlState();
@@ -793,6 +823,20 @@ class _RepeatControlState extends State<RepeatControl> {
                 ),
               ),
             ),
+            const SizedBox(width: 8),
+            if (_selectedOption != null)
+              GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _selectedOption = null;
+                    });
+                    widget.onRepeatOptionChanged(null);
+                  },
+                  child: const Icon(
+                    CupertinoIcons.clear_circled,
+                    size: 20,
+                    color: Colors.white,
+                  )),
           ],
         ),
       ),
@@ -821,7 +865,7 @@ class _RepeatControlState extends State<RepeatControl> {
         setState(() {
           _selectedOption = value;
         });
-        widget.onChanged(value);
+        widget.onRepeatOptionChanged(value);
       }
     });
   }
