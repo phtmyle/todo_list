@@ -283,6 +283,7 @@ class _AddTodoBottomSheetState extends State<AddTodoBottomSheet> {
   DateTime? dueDate;
   bool remindMe = false;
   DateTime? reminderDate;
+  DateTime? dueTime;
   RepeatFrequency repeat = RepeatFrequency.none;
 
   @override
@@ -357,38 +358,46 @@ class _AddTodoBottomSheetState extends State<AddTodoBottomSheet> {
                     },
                   ),
                   const SizedBox(width: 16),
-                  _ReminderControl(
-                    remindMe: remindMe,
-                    onToggle: (value) {
+                  // _ReminderControl(
+                  //   remindMe: remindMe,
+                  //   onToggle: (value) {
+                  //     setState(() {
+                  //       remindMe = value;
+                  //     });
+                  //   },
+                  //   reminderDate: reminderDate,
+                  //   onSelectReminder: (option) {
+                  //     switch (option) {
+                  //       case ReminderOption.laterToday:
+                  //         setState(() {
+                  //           reminderDate =
+                  //               DateTime.now().add(const Duration(hours: 1));
+                  //         });
+                  //         break;
+                  //       case ReminderOption.tomorrow:
+                  //         setState(() {
+                  //           reminderDate =
+                  //               DateTime.now().add(const Duration(days: 1));
+                  //         });
+                  //         break;
+                  //       case ReminderOption.nextWeek:
+                  //         setState(() {
+                  //           reminderDate =
+                  //               DateTime.now().add(const Duration(days: 7));
+                  //         });
+                  //         break;
+                  //       case ReminderOption.pickDateTime:
+                  //         _selectDateTime(context);
+                  //         break;
+                  //     }
+                  //   },
+                  // ),
+                  _SetTimeControl(
+                    dueTime: dueTime,
+                    onTimeChanged: (time) {
                       setState(() {
-                        remindMe = value;
+                        dueTime = time;
                       });
-                    },
-                    reminderDate: reminderDate,
-                    onSelectReminder: (option) {
-                      switch (option) {
-                        case ReminderOption.laterToday:
-                          setState(() {
-                            reminderDate =
-                                DateTime.now().add(const Duration(hours: 1));
-                          });
-                          break;
-                        case ReminderOption.tomorrow:
-                          setState(() {
-                            reminderDate =
-                                DateTime.now().add(const Duration(days: 1));
-                          });
-                          break;
-                        case ReminderOption.nextWeek:
-                          setState(() {
-                            reminderDate =
-                                DateTime.now().add(const Duration(days: 7));
-                          });
-                          break;
-                        case ReminderOption.pickDateTime:
-                          _selectDateTime(context);
-                          break;
-                      }
                     },
                   ),
                   const SizedBox(width: 16),
@@ -405,34 +414,6 @@ class _AddTodoBottomSheetState extends State<AddTodoBottomSheet> {
         ),
       ),
     );
-  }
-
-  Future<void> _selectDateTime(BuildContext context) async {
-    DateTime? pickedDate = await showDatePicker(
-      context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime.now(),
-      lastDate: DateTime(2101),
-    );
-
-    if (pickedDate != null) {
-      TimeOfDay? pickedTime = await showTimePicker(
-        context: context,
-        initialTime: TimeOfDay.now(),
-      );
-
-      if (pickedTime != null) {
-        setState(() {
-          reminderDate = DateTime(
-            pickedDate.year,
-            pickedDate.month,
-            pickedDate.day,
-            pickedTime.hour,
-            pickedTime.minute,
-          );
-        });
-      }
-    }
   }
 }
 
@@ -514,7 +495,7 @@ class _DueDateControlState extends State<_DueDateControl> {
             const SizedBox(width: 8),
             Text(
               dueDate != null
-                  ? 'Due ${dueDate!.toLocal().toString().split(' ')[0]}'
+                  ? 'Date ${dueDate!.toLocal().toString().split(' ')[0]}'
                   : 'Add due date',
               style: TextStyle(
                 color: dueDate != null ? Colors.white : Colors.grey,
@@ -538,6 +519,82 @@ class _DueDateControlState extends State<_DueDateControl> {
         dueDate = picked;
       });
       widget.onDateChanged(dueDate);
+    }
+  }
+}
+
+// Set Time Control
+class _SetTimeControl extends StatefulWidget {
+  final DateTime? dueTime;
+  final ValueChanged<DateTime?> onTimeChanged;
+
+  const _SetTimeControl({
+    required this.dueTime,
+    required this.onTimeChanged,
+  });
+
+  @override
+  _SetTimeControlState createState() => _SetTimeControlState();
+}
+
+class _SetTimeControlState extends State<_SetTimeControl> {
+  DateTime? dueTime;
+
+  @override
+  void initState() {
+    super.initState();
+    dueTime = widget.dueTime;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => _selectTime(context),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        height: 40,
+        decoration: BoxDecoration(
+          color: dueTime != null ? const Color(0xFF5D70BD) : Colors.grey[200],
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              Icons.access_time,
+              size: 24,
+              color: dueTime != null ? Colors.white : Colors.grey,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              dueTime != null
+                  ? 'Due at ${DateFormat('h:mm a').format(dueTime!)}'
+                  : 'Set a time',
+              style: TextStyle(
+                color: dueTime != null ? Colors.white : Colors.grey,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _selectTime(BuildContext context) async {
+    final TimeOfDay? picked = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(dueTime ?? DateTime.now()),
+    );
+    if (picked != null) {
+      setState(() {
+        dueTime = DateTime(
+          DateTime.now().year,
+          DateTime.now().month,
+          DateTime.now().day,
+          picked.hour,
+          picked.minute,
+        );
+      });
+      widget.onTimeChanged(dueTime);
     }
   }
 }
@@ -719,16 +776,10 @@ class _RepeatControlState extends State<RepeatControl> {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            SvgPicture.asset(
-              'assets/icons/repeat_solid.svg',
-              width: 24, // Match icon size
-              height: 24, // Match icon size
-              colorFilter: ColorFilter.mode(
-                _selectedOption != null
-                    ? Colors.white
-                    : Colors.grey, // Mimic color logic
-                BlendMode.srcIn,
-              ),
+            Icon(
+              Icons.autorenew,
+              size: 24,
+              color: _selectedOption != null ? Colors.white : Colors.grey,
             ),
             const SizedBox(width: 8),
             GestureDetector(
@@ -749,10 +800,15 @@ class _RepeatControlState extends State<RepeatControl> {
   }
 
   void _showRepeatOptions(BuildContext context) {
+    RenderBox renderBox = context.findRenderObject() as RenderBox;
+    Offset offset = renderBox.localToGlobal(Offset.zero);
+
+    double x = offset.dx;
+    double y = offset.dy + renderBox.size.height;
+
     showMenu<RepeatOption>(
       context: context,
-      position: const RelativeRect.fromLTRB(
-          100, 100, 0, 0), // Adjust position as needed
+      position: RelativeRect.fromLTRB(x, y, 0, 0),
       items: [
         _buildPopupMenuItem(RepeatOption.daily),
         _buildPopupMenuItem(RepeatOption.weekly),
