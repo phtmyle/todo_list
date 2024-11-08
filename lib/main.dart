@@ -98,7 +98,7 @@ class _MyAppState extends State<MyApp> {
         extensions: const <ThemeExtension<dynamic>>[
           CustomColors(
             unsetValueColor: Colors.grey,
-            setValueColor: Colors.blue,
+            setValueColor: Color(0xFF5D70BD),
           ),
         ],
       ),

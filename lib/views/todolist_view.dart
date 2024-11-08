@@ -33,7 +33,7 @@ class TodoListTile extends StatelessWidget {
                 ? Icons.check_circle
                 : Icons.radio_button_unchecked,
             color: todo.isCompleted
-                ? customColors.setValueColor
+                ? Theme.of(context).primaryColor
                 : customColors.unsetValueColor,
           ),
         ),
@@ -43,9 +43,10 @@ class TodoListTile extends StatelessWidget {
             decoration: todo.isCompleted
                 ? TextDecoration.lineThrough
                 : TextDecoration.none,
-            color: todo.isCompleted
-                ? customColors.setValueColor
-                : customColors.unsetValueColor,
+            color:
+                todo.isCompleted ? customColors.unsetValueColor : Colors.black,
+            decorationColor:
+                todo.isCompleted ? customColors.unsetValueColor : null,
           ),
         ),
         trailing: Icon(Icons.star_border, color: customColors.unsetValueColor),
@@ -437,7 +438,7 @@ class TodoSearchDelegate extends SearchDelegate<Todo?> {
 
     return SafeArea(
       child: Container(
-        color: const Color(0xFF5C6BC0),
+        color: Theme.of(context).primaryColor,
         child: ListView.builder(
           itemCount: results.length,
           itemBuilder: (context, index) {
@@ -463,7 +464,7 @@ class TodoSearchDelegate extends SearchDelegate<Todo?> {
 
     return SafeArea(
       child: Container(
-        color: const Color(0xFF5C6BC0),
+        color: Theme.of(context).primaryColor,
         child: ListView.builder(
           itemCount: suggestions.length,
           itemBuilder: (context, index) {
@@ -541,8 +542,8 @@ class _AddTodoBottomSheetState extends State<AddTodoBottomSheet> {
                       height: 30.0,
                       decoration: BoxDecoration(
                         color: title.isEmpty
-                            ? const Color(0xFFC2C2C2)
-                            : const Color(0xFF2665EE), // Color based on input
+                            ? Colors.grey[200]
+                            : Theme.of(context).colorScheme.primary,
                         shape: BoxShape.rectangle,
                         borderRadius: BorderRadius.circular(8),
                       ),
@@ -604,7 +605,6 @@ class _TaskTitleField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final customColors = Theme.of(context).extension<CustomColors>()!;
-
     return Expanded(
       child: Row(
         children: [
@@ -748,7 +748,9 @@ class _SetTimeControlState extends State<_SetTimeControl> {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         height: 40,
         decoration: BoxDecoration(
-          color: dueTime != null ? const Color(0xFF5D70BD) : Colors.grey[200],
+          color: dueTime != null
+              ? Theme.of(context).colorScheme.primary
+              : Colors.grey[200],
           borderRadius: BorderRadius.circular(12),
         ),
         child: Row(
@@ -822,7 +824,7 @@ class _RepeatControlState extends State<RepeatControl> {
         height: 40,
         decoration: BoxDecoration(
           color: _selectedOption != null
-              ? const Color(0xFF5D70BD)
+              ? Theme.of(context).colorScheme.primary
               : Colors.grey[200],
           borderRadius: BorderRadius.circular(12),
         ),
