@@ -225,7 +225,53 @@ class TodoListViewState extends State<TodoListView> {
     });
   }
 
-  @override
+  List<Todo> _filterTodosByCategory(List<Todo> todos, String category) {
+    DateTime now = DateTime.now();
+    DateTime tomorrow = now.add(const Duration(days: 1));
+    List<Todo> filteredTodos;
+
+    switch (category) {
+      case 'Today':
+        filteredTodos = todos
+            .where((todo) =>
+                todo.dueDate != null &&
+                todo.dueDate!.year == now.year &&
+                todo.dueDate!.month == now.month &&
+                todo.dueDate!.day == now.day)
+            .toList();
+        break;
+      case 'Tomorrow':
+        filteredTodos = todos
+            .where((todo) =>
+                todo.dueDate != null &&
+                todo.dueDate!.year == tomorrow.year &&
+                todo.dueDate!.month == tomorrow.month &&
+                todo.dueDate!.day == tomorrow.day)
+            .toList();
+        break;
+      case 'Upcoming':
+        filteredTodos = todos
+            .where((todo) => todo.dueDate == null || todo.dueDate!.isAfter(now))
+            .toList();
+        break;
+      default: // 'All'
+        filteredTodos = todos;
+    }
+
+    filteredTodos.sort((a, b) {
+      if (a.isImportant && !b.isImportant) return -1;
+      if (!a.isImportant && b.isImportant) return 1;
+      if (a.dueDate == null && b.dueDate != null) return 1;
+      if (a.dueDate != null && b.dueDate == null) return -1;
+      if (a.dueDate != null && b.dueDate != null) {
+        return a.dueDate!.compareTo(b.dueDate!);
+      }
+      return 0;
+    });
+
+    return filteredTodos;
+  }
+
   @override
   Widget build(BuildContext context) {
     List<Todo> todos = widget.viewModel.getTodos();
@@ -277,11 +323,8 @@ class TodoListViewState extends State<TodoListView> {
                   },
                   selectedItemBuilder: (BuildContext context) {
                     return <String>['All', 'Today', 'Upcoming']
-                        .map((String value) {
-                      return Text(
-                        value,
-                        style: const TextStyle(color: Colors.white),
-                      );
+                        .map<Widget>((String item) {
+                      return Text(item);
                     }).toList();
                   },
                 ),
@@ -304,11 +347,13 @@ class TodoListViewState extends State<TodoListView> {
                       EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                   child: Row(
                     children: [
-                      SizedBox(width: 8),
                       Text(
-                        'Daily',
+                        'Tasks',
                         style: TextStyle(
-                            fontSize: 36, fontWeight: FontWeight.bold),
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
                       ),
                     ],
                   ),
@@ -333,7 +378,7 @@ class TodoListViewState extends State<TodoListView> {
                       ]
                     ],
                   ),
-                )
+                ),
               ],
             ),
           ),
@@ -361,57 +406,6 @@ class TodoListViewState extends State<TodoListView> {
         ),
       ),
     );
-  }
-
-  List<Todo> _filterTodosByCategory(List<Todo> todos, String category) {
-    DateTime now = DateTime.now();
-    DateTime tomorrow = now.add(const Duration(days: 1));
-    List<Todo> filteredTodos;
-
-    switch (category) {
-      case 'Today':
-        filteredTodos = todos
-            .where((todo) =>
-                !todo.isCompleted &&
-                todo.dueDate != null &&
-                todo.dueDate!.year == now.year &&
-                todo.dueDate!.month == now.month &&
-                todo.dueDate!.day == now.day)
-            .toList();
-        break;
-      case 'Tomorrow':
-        filteredTodos = todos
-            .where((todo) =>
-                !todo.isCompleted &&
-                todo.dueDate != null &&
-                todo.dueDate!.year == tomorrow.year &&
-                todo.dueDate!.month == tomorrow.month &&
-                todo.dueDate!.day == tomorrow.day)
-            .toList();
-        break;
-      case 'Upcoming':
-        filteredTodos = todos
-            .where((todo) =>
-                !todo.isCompleted &&
-                (todo.dueDate == null || todo.dueDate!.isAfter(now)))
-            .toList();
-        break;
-      default: // 'All'
-        filteredTodos = todos;
-    }
-
-    filteredTodos.sort((a, b) {
-      if (a.isImportant && !b.isImportant) return -1;
-      if (!a.isImportant && b.isImportant) return 1;
-      if (a.dueDate == null && b.dueDate != null) return 1;
-      if (a.dueDate != null && b.dueDate == null) return -1;
-      if (a.dueDate != null && b.dueDate != null) {
-        return a.dueDate!.compareTo(b.dueDate!);
-      }
-      return 0;
-    });
-
-    return filteredTodos;
   }
 
   Widget _buildDismissibleTodoItem(Todo todo) {
