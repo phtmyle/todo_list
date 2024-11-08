@@ -7,6 +7,46 @@ import '../models/repeat_frequency.dart';
 import '../models/todo.dart';
 import '../viewmodels/todolist_viewmodel.dart';
 
+// Create a new widget TodoListTile
+class TodoListTile extends StatelessWidget {
+  final Todo todo;
+  final Function(Todo) onToggleCompletion;
+
+  const TodoListTile({
+    super.key,
+    required this.todo,
+    required this.onToggleCompletion,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      child: ListTile(
+        leading: GestureDetector(
+          onTap: () => onToggleCompletion(todo),
+          child: Icon(
+            todo.isCompleted
+                ? Icons.check_circle
+                : Icons.radio_button_unchecked,
+            color: todo.isCompleted ? Colors.blue : Colors.grey,
+          ),
+        ),
+        title: Text(
+          todo.title,
+          style: TextStyle(
+            decoration: todo.isCompleted
+                ? TextDecoration.lineThrough
+                : TextDecoration.none,
+            color: todo.isCompleted ? Colors.grey : Colors.black,
+          ),
+        ),
+        trailing: const Icon(Icons.star_border, color: Colors.grey),
+      ),
+    );
+  }
+}
+
 class TodoListView extends StatefulWidget {
   final TodoListViewModel viewModel;
 
@@ -71,244 +111,323 @@ class TodoListViewState extends State<TodoListView> {
     });
   }
 
+  void _onSearchIconPressed() {
+    showSearch(
+      context: context,
+      delegate: TodoSearchDelegate(widget.viewModel),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     List<Todo> todos = widget.viewModel.getTodos();
-    List<Todo> filteredTodos;
-
-    if (selectedCategory == 'Today') {
-      filteredTodos = todos.where((todo) {
-        return todo.dueDate != null &&
-            todo.dueDate!.year == DateTime.now().year &&
-            todo.dueDate!.month == DateTime.now().month &&
-            todo.dueDate!.day == DateTime.now().day;
-      }).toList();
-    } else if (selectedCategory == 'Upcoming') {
-      filteredTodos = todos.where((todo) {
-        return todo.dueDate == null ||
-            todo.dueDate!.isAfter(DateTime.now().add(const Duration(days: 1)));
-      }).toList();
-    } else {
-      filteredTodos = todos;
-    }
-
+    List<Todo> filteredTodos = _filterTodosByCategory(todos, selectedCategory);
     List<Todo> pendingTodos =
         filteredTodos.where((todo) => !todo.isCompleted).toList();
     List<Todo> completedTodos =
         filteredTodos.where((todo) => todo.isCompleted).toList();
 
     return SafeArea(
-        child: Scaffold(
-      appBar: AppBar(
-        title: const Text('Todo List',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-        backgroundColor: const Color(0xFF5C6BC0),
-        elevation: 0,
-        actions: [
-          Row(
+      child: Scaffold(
+        backgroundColor: Theme.of(context).primaryColor,
+        appBar: AppBar(
+          title: const Text('Todo List',
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          actions: [
+            Row(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.filter_list),
+                  onPressed: () {},
+                ),
+                DropdownButtonHideUnderline(
+                  child: DropdownButton<String>(
+                    value: selectedCategory,
+                    isDense: true,
+                    icon: const SizedBox.shrink(),
+                    items: <String>['All', 'Today', 'Upcoming']
+                        .map((String value) {
+                      return DropdownMenuItem<String>(
+                        value: value,
+                        child: Text(
+                          value,
+                          style: const TextStyle(color: Colors.black),
+                        ),
+                      );
+                    }).toList(),
+                    onChanged: (String? newValue) {
+                      setState(() {
+                        selectedCategory = newValue!;
+                      });
+                    },
+                    selectedItemBuilder: (BuildContext context) {
+                      return <String>['All', 'Today', 'Upcoming']
+                          .map((String value) {
+                        return Text(
+                          value,
+                          style: const TextStyle(color: Colors.white),
+                        );
+                      }).toList();
+                    },
+                  ),
+                )
+              ],
+            ),
+            const SizedBox(width: 12),
+            IconButton(
+              icon: const Icon(Icons.search),
+              onPressed: _onSearchIconPressed,
+            ),
+            const Icon(Icons.more_vert, size: 28),
+            const SizedBox(width: 12),
+          ],
+        ),
+        body: Container(
+          color: const Color(0xFF5C6BC0),
+          child: Column(
             children: [
-              IconButton(
-                icon: const Icon(Icons.filter_list),
-                onPressed: () {},
-              ),
-              DropdownButtonHideUnderline(
-                child: DropdownButton<String>(
-                  value: selectedCategory,
-                  items:
-                      <String>['All', 'Today', 'Upcoming'].map((String value) {
-                    return DropdownMenuItem<String>(
-                      value: value,
-                      child: Text(value),
-                    );
-                  }).toList(),
-                  onChanged: (String? newValue) {
-                    setState(() {
-                      selectedCategory = newValue!;
-                    });
-                  },
+              Expanded(
+                child: Container(
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(20),
+                      topRight: Radius.circular(20),
+                    ),
+                  ),
+                  child: ListView(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: pendingTodos
+                              .map((todo) => _buildDismissibleTodoItem(todo))
+                              .toList(),
+                        ),
+                      ),
+                      const Divider(thickness: 1),
+                      if (completedTodos.isNotEmpty)
+                        _buildCompletedTasksSection(completedTodos),
+                    ],
+                  ),
                 ),
               ),
             ],
           ),
-          const SizedBox(width: 12),
-          const Icon(Icons.more_vert, size: 28),
-          const SizedBox(width: 12),
-        ],
+        ),
+        floatingActionButton: FloatingActionButton(
+          onPressed: _addTodo,
+          tooltip: 'Add Todo',
+          backgroundColor: const Color(0xFF5C6BC0),
+          child: const Icon(Icons.add, size: 32),
+        ),
       ),
-      body: Container(
-        color: const Color(0xFF5C6BC0),
+    );
+  }
+
+  List<Todo> _filterTodosByCategory(List<Todo> todos, String category) {
+    DateTime now = DateTime.now();
+    DateTime tomorrow = now.add(const Duration(days: 1));
+    switch (category) {
+      case 'Today':
+        return todos
+            .where((todo) =>
+                !todo.isCompleted &&
+                todo.dueDate != null &&
+                todo.dueDate!.year == now.year &&
+                todo.dueDate!.month == now.month &&
+                todo.dueDate!.day == now.day)
+            .toList();
+      case 'Tomorrow':
+        return todos
+            .where((todo) =>
+                !todo.isCompleted &&
+                todo.dueDate != null &&
+                todo.dueDate!.year == tomorrow.year &&
+                todo.dueDate!.month == tomorrow.month &&
+                todo.dueDate!.day == tomorrow.day)
+            .toList();
+      case 'Upcoming':
+        return todos
+            .where((todo) =>
+                !todo.isCompleted &&
+                (todo.dueDate == null || todo.dueDate!.isAfter(now)))
+            .toList();
+      default: // 'All'
+        return todos;
+    }
+  }
+
+  Widget _buildDismissibleTodoItem(Todo todo) {
+    return Dismissible(
+      key: Key(todo.id),
+      direction: DismissDirection.horizontal,
+      onDismissed: (direction) {
+        _toggleTodoCompletion(todo);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("${todo.title} moved to completed")),
+        );
+      },
+      background: Container(
+        color: Colors.green,
+        alignment: Alignment.centerRight,
+        child: const Padding(
+          padding: EdgeInsets.only(right: 20.0),
+          child: Icon(Icons.check, color: Colors.white),
+        ),
+      ),
+      secondaryBackground: Container(
+        color: Colors.red,
+        alignment: Alignment.centerLeft,
+        child: const Padding(
+          padding: EdgeInsets.only(left: 20.0),
+          child: Icon(Icons.delete, color: Colors.white),
+        ),
+      ),
+      child: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 300),
+        transitionBuilder: (Widget child, Animation<double> animation) {
+          return FadeTransition(opacity: animation, child: child);
+        },
+        child: TodoListTile(
+          key: ValueKey(todo.isCompleted),
+          todo: todo,
+          onToggleCompletion: _toggleTodoCompletion,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCompletedTasksSection(List<Todo> completedTodos) {
+    return AnimatedSize(
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16.0),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(
-              child: Container(
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(20),
-                    topRight: Radius.circular(20),
+            GestureDetector(
+              onTap: () {
+                setState(() {
+                  isCompletedTasksExpanded = !isCompletedTasksExpanded;
+                });
+              },
+              child: Row(
+                children: [
+                  Icon(
+                    isCompletedTasksExpanded
+                        ? Icons.expand_less
+                        : Icons.expand_more,
+                    color: const Color(0xFF5C6BC0),
                   ),
-                ),
-                child: ListView(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  children: [
-                    // Pending Tasks
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: pendingTodos.map((todo) {
-                          return Dismissible(
-                            key: Key(todo.id),
-                            direction: DismissDirection.horizontal,
-                            onDismissed: (direction) {
-                              _toggleTodoCompletion(todo);
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                    content: Text(
-                                        "${todo.title} moved to completed")),
-                              );
-                            },
-                            background: Container(
-                              color: Colors.green,
-                              alignment: Alignment.centerRight,
-                              child: const Padding(
-                                padding: EdgeInsets.only(right: 20.0),
-                                child: Icon(Icons.check, color: Colors.white),
-                              ),
-                            ),
-                            secondaryBackground: Container(
-                              color: Colors.red,
-                              alignment: Alignment.centerLeft,
-                              child: const Padding(
-                                padding: EdgeInsets.only(left: 20.0),
-                                child: Icon(Icons.delete, color: Colors.white),
-                              ),
-                            ),
-                            child: AnimatedSwitcher(
-                              duration: const Duration(milliseconds: 300),
-                              transitionBuilder:
-                                  (Widget child, Animation<double> animation) {
-                                return FadeTransition(
-                                    opacity: animation, child: child);
-                              },
-                              child: Card(
-                                key: ValueKey(todo.isCompleted),
-                                margin: const EdgeInsets.symmetric(vertical: 8),
-                                child: ListTile(
-                                  leading: GestureDetector(
-                                    onTap: () => _toggleTodoCompletion(todo),
-                                    child: Icon(
-                                      todo.isCompleted
-                                          ? Icons.check_circle
-                                          : Icons.radio_button_unchecked,
-                                      color: todo.isCompleted
-                                          ? Colors.blue
-                                          : Colors.grey,
-                                    ),
-                                  ),
-                                  title: Text(todo.title),
-                                  trailing: const Icon(Icons.star_border,
-                                      color: Colors.grey),
-                                ),
-                              ),
-                            ),
-                          );
-                        }).toList(),
-                      ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Completed ${completedTodos.length}',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF5C6BC0),
+                      fontSize: 16,
                     ),
-                    const Divider(thickness: 1),
-                    // Completed Tasks Section
-                    if (completedTodos.isNotEmpty)
-                      AnimatedSize(
-                        duration: const Duration(milliseconds: 300),
-                        curve: Curves.easeInOut,
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              GestureDetector(
-                                onTap: () {
-                                  setState(() {
-                                    isCompletedTasksExpanded =
-                                        !isCompletedTasksExpanded;
-                                  });
-                                },
-                                child: Row(
-                                  children: [
-                                    Icon(
-                                      isCompletedTasksExpanded
-                                          ? Icons.expand_less
-                                          : Icons.expand_more,
-                                      color: const Color(0xFF5C6BC0),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      'Completed ${completedTodos.length}',
-                                      style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          color: Color(0xFF5C6BC0),
-                                          fontSize: 16),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              if (isCompletedTasksExpanded)
-                                Column(
-                                  children: completedTodos.map((todo) {
-                                    return AnimatedSwitcher(
-                                      duration:
-                                          const Duration(milliseconds: 300),
-                                      transitionBuilder: (Widget child,
-                                          Animation<double> animation) {
-                                        return FadeTransition(
-                                            opacity: animation, child: child);
-                                      },
-                                      child: Card(
-                                        key: ValueKey(todo.isCompleted),
-                                        margin: const EdgeInsets.symmetric(
-                                            vertical: 8),
-                                        child: ListTile(
-                                          leading: const Icon(
-                                              Icons.check_circle,
-                                              color: Color(0xFF5C6BC0)),
-                                          title: Text(
-                                            todo.title,
-                                            style: const TextStyle(
-                                              decoration:
-                                                  TextDecoration.lineThrough,
-                                              color: Colors.grey,
-                                            ),
-                                          ),
-                                          trailing: const Icon(
-                                              Icons.star_border,
-                                              color: Colors.grey),
-                                          onTap: () =>
-                                              _toggleTodoCompletion(todo),
-                                        ),
-                                      ),
-                                    );
-                                  }).toList(),
-                                ),
-                            ],
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
+            const SizedBox(height: 8),
+            if (isCompletedTasksExpanded)
+              Column(
+                children: completedTodos.map((todo) {
+                  return AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 300),
+                    transitionBuilder:
+                        (Widget child, Animation<double> animation) {
+                      return FadeTransition(opacity: animation, child: child);
+                    },
+                    child: TodoListTile(
+                      key: ValueKey(todo.isCompleted),
+                      todo: todo,
+                      onToggleCompletion: _toggleTodoCompletion,
+                    ),
+                  );
+                }).toList(),
+              ),
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _addTodo,
-        tooltip: 'Add Todo',
-        backgroundColor: const Color(0xFF5C6BC0),
-        child: const Icon(Icons.add, size: 32),
+    );
+  }
+}
+
+class TodoSearchDelegate extends SearchDelegate<Todo?> {
+  final TodoListViewModel viewModel;
+
+  TodoSearchDelegate(this.viewModel);
+
+  @override
+  List<Widget> buildActions(BuildContext context) {
+    return [
+      IconButton(
+        icon: const Icon(Icons.clear),
+        onPressed: () {
+          query = '';
+        },
       ),
-    ));
+    ];
+  }
+
+  @override
+  Widget buildLeading(BuildContext context) {
+    return IconButton(
+      icon: const Icon(Icons.arrow_back),
+      onPressed: () {
+        close(context, null);
+      },
+    );
+  }
+
+  @override
+  Widget buildResults(BuildContext context) {
+    final results = viewModel.getTodos().where((todo) {
+      return todo.title.toLowerCase().contains(query.toLowerCase());
+    }).toList();
+
+    return ListView.builder(
+      itemCount: results.length,
+      itemBuilder: (context, index) {
+        final todo = results[index];
+        return ListTile(
+          title: Text(todo.title),
+          onTap: () {
+            close(context, todo);
+          },
+        );
+      },
+    );
+  }
+
+  @override
+  Widget buildSuggestions(BuildContext context) {
+    final suggestions = viewModel.getTodos().where((todo) {
+      return todo.title.toLowerCase().contains(query.toLowerCase());
+    }).toList();
+
+    return ListView.builder(
+      itemCount: suggestions.length,
+      itemBuilder: (context, index) {
+        final todo = suggestions[index];
+        return ListTile(
+          title: Text(todo.title),
+          onTap: () {
+            query = todo.title;
+            showResults(context);
+          },
+        );
+      },
+    );
   }
 }
 
@@ -547,7 +666,6 @@ class _DueDateControlState extends State<_DueDateControl> {
 }
 
 // Set Time Control
-// Update the _SetTimeControl widget to use TimeOfDay instead of DateTime for dueTime
 class _SetTimeControl extends StatefulWidget {
   final TimeOfDay? dueTime;
   final ValueChanged<TimeOfDay?> onTimeChanged;
