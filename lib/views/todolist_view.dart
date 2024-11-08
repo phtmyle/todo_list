@@ -20,6 +20,7 @@ class TodoListTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
+      color: Colors.white,
       margin: const EdgeInsets.symmetric(vertical: 8),
       child: ListTile(
         leading: GestureDetector(
@@ -186,37 +187,28 @@ class TodoListViewState extends State<TodoListView> {
           ],
         ),
         body: Container(
-          color: const Color(0xFF5C6BC0),
+          color: Theme.of(context).primaryColor,
           child: Column(
             children: [
               Expanded(
-                child: Container(
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(20),
-                      topRight: Radius.circular(20),
-                    ),
-                  ),
-                  child: ListView(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: pendingTodos
-                              .map((todo) => _buildDismissibleTodoItem(todo))
-                              .toList(),
-                        ),
+                child: ListView(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: pendingTodos
+                            .map((todo) => _buildDismissibleTodoItem(todo))
+                            .toList(),
                       ),
-                      const Divider(thickness: 1),
-                      if (completedTodos.isNotEmpty)
-                        _buildCompletedTasksSection(completedTodos),
-                    ],
-                  ),
+                    ),
+                    const Divider(thickness: 1),
+                    if (completedTodos.isNotEmpty)
+                      _buildCompletedTasksSection(completedTodos),
+                  ],
                 ),
-              ),
+              )
             ],
           ),
         ),
@@ -320,20 +312,13 @@ class TodoListViewState extends State<TodoListView> {
               },
               child: Row(
                 children: [
-                  Icon(
-                    isCompletedTasksExpanded
-                        ? Icons.expand_less
-                        : Icons.expand_more,
-                    color: const Color(0xFF5C6BC0),
-                  ),
+                  Icon(isCompletedTasksExpanded
+                      ? Icons.expand_less
+                      : Icons.expand_more),
                   const SizedBox(width: 8),
                   Text(
                     'Completed ${completedTodos.length}',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF5C6BC0),
-                      fontSize: 16,
-                    ),
+                    style: Theme.of(context).textTheme.bodyLarge,
                   ),
                 ],
               ),
@@ -375,17 +360,24 @@ class TodoSearchDelegate extends SearchDelegate<Todo?> {
       appBarTheme: const AppBarTheme(
         backgroundColor: Colors.transparent,
         elevation: 0,
+        iconTheme:
+            IconThemeData(color: Color(0xFF424242)), // Dark grey icon color
       ),
       inputDecorationTheme: const InputDecorationTheme(
         hintStyle: TextStyle(color: Colors.grey),
         border: InputBorder.none,
       ),
+      iconTheme: const IconThemeData(color: Color(0xFF424242)),
+      // Dark grey icon color
       textTheme: theme.textTheme.copyWith(
-        headlineSmall:
-            const TextStyle(color: Colors.black), // Search query text color
+        headlineSmall: const TextStyle(color: Colors.black),
+        bodyLarge: const TextStyle(color: Colors.black),
       ),
     );
   }
+
+  @override
+  TextStyle? get searchFieldStyle => const TextStyle(color: Colors.black);
 
   @override
   List<Widget> buildActions(BuildContext context) {
@@ -452,7 +444,6 @@ class TodoSearchDelegate extends SearchDelegate<Todo?> {
               todo: todo,
               onToggleCompletion: (todo) {
                 viewModel.toggleTodoCompletion(todo);
-                // query = todo.title;
                 showResults(context);
               },
             );

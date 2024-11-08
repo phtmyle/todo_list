@@ -72,18 +72,32 @@ class _MyAppState extends State<MyApp> {
       title: 'Todo List',
       theme: ThemeData(
         primarySwatch: Colors.indigo,
-        appBarTheme: const AppBarTheme(
-          foregroundColor: Colors.white,
-        ),
         textTheme: const TextTheme(
-          bodyLarge: TextStyle(color: Colors.black),
-          bodyMedium: TextStyle(color: Colors.grey),
+          bodyLarge: TextStyle(color: Colors.white),
+          bodyMedium: TextStyle(color: Colors.white),
+          bodySmall: TextStyle(color: Colors.white),
+          headlineSmall: TextStyle(color: Colors.white),
+          headlineMedium: TextStyle(color: Colors.white),
+          headlineLarge: TextStyle(color: Colors.white),
+        ),
+        colorScheme: ColorScheme.fromSwatch().copyWith(
+          onPrimary: Colors.white,
+          onSecondary: Colors.white,
+          onSurface: Colors.white,
+          onBackground: Colors.white,
+          onError: Colors.white,
+        ),
+        appBarTheme: const AppBarTheme(
+          iconTheme: IconThemeData(color: Colors.white),
         ),
       ),
-      home: TodoListView(
-        viewModel: TodoListViewModel(
-          notificationService:
-              NotificationService(FlutterLocalNotificationsPlugin()),
+      home: IconTheme(
+        data: const IconThemeData(color: Colors.white),
+        child: TodoListView(
+          viewModel: TodoListViewModel(
+            notificationService:
+                NotificationService(FlutterLocalNotificationsPlugin()),
+          ),
         ),
       ),
     );
