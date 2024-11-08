@@ -332,24 +332,30 @@ class _AddTodoBottomSheetState extends State<AddTodoBottomSheet> {
                 ),
                 const SizedBox(width: 8),
                 GestureDetector(
-                  onTap: () {
-                    if (title.isNotEmpty) {
-                      widget.onAdd(title, dueDate, remindMe, repeat);
-                      // Navigator.of(context).pop();
-                    }
-                  },
-                  child: Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: title.isEmpty
-                          ? const Color(0xFFC2C2C2)
-                          : const Color(0xFF2665EE), // Color based on input
-                    ),
-                    child: const Icon(Icons.arrow_upward, color: Colors.white),
-                  ),
-                ),
+                    onTap: () {
+                      if (title.isNotEmpty) {
+                        widget.onAdd(title, dueDate, remindMe, repeat);
+                        // Navigator.of(context).pop();
+                      }
+                    },
+                    child: Container(
+                      width: 30.0,
+                      height: 30.0,
+                      decoration: BoxDecoration(
+                        color: title.isEmpty
+                            ? const Color(0xFFC2C2C2)
+                            : const Color(0xFF2665EE), // Color based on input
+                        shape: BoxShape.rectangle,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Center(
+                        child: Icon(
+                          Icons.arrow_upward,
+                          color: Colors.white, // Icon color
+                          size: 20.0,
+                        ),
+                      ),
+                    )),
               ],
             ),
             const SizedBox(height: 16),

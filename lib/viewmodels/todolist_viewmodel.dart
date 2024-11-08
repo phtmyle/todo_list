@@ -90,7 +90,5 @@ class TodoListViewModel extends ChangeNotifier {
 
   void updateTodoStatus(String id, bool isCompleted) {
     final todo = _todos.firstWhere((todo) => todo.id == id);
-    todo.isCompleted = isCompleted;
-    notifyListeners();
   }
 }
