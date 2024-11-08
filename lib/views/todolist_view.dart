@@ -282,127 +282,113 @@ class TodoListViewState extends State<TodoListView> {
     List<Todo> completedTodos =
         filteredTodos.where((todo) => todo.isCompleted).toList();
 
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          // Hide the trash icon when tapping outside
-          for (var todo in todos) {
-            // No need to set showTrashIcon here as it's managed in TodoListTile
-          }
-        });
-      },
-      child: SafeArea(
-        child: Scaffold(
-          backgroundColor: Theme.of(context).primaryColor,
-          appBar: AppBar(
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            actions: [
-              DropdownButtonHideUnderline(
-                child: DropdownButton<String>(
-                  value: selectedCategory,
-                  isDense: true,
-                  icon: const ColorFiltered(
-                    colorFilter:
-                        ColorFilter.mode(Colors.white, BlendMode.srcIn),
-                    child: Icon(Icons.filter_list),
-                  ),
-                  items:
-                      <String>['All', 'Today', 'Upcoming'].map((String value) {
-                    return DropdownMenuItem<String>(
-                      value: value,
-                      child: Text(
-                        value,
-                        style: const TextStyle(color: Colors.black),
+    return SafeArea(
+      child: Scaffold(
+        backgroundColor: Theme.of(context).primaryColor,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          actions: [
+            DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                value: selectedCategory,
+                isDense: true,
+                icon: const ColorFiltered(
+                  colorFilter: ColorFilter.mode(Colors.white, BlendMode.srcIn),
+                  child: Icon(Icons.filter_list),
+                ),
+                items: <String>['All', 'Today', 'Upcoming'].map((String value) {
+                  return DropdownMenuItem<String>(
+                    value: value,
+                    child: Text(
+                      value,
+                      style: const TextStyle(color: Colors.black),
+                    ),
+                  );
+                }).toList(),
+                onChanged: (String? newValue) {
+                  setState(() {
+                    selectedCategory = newValue!;
+                  });
+                },
+                selectedItemBuilder: (BuildContext context) {
+                  return <String>['All', 'Today', 'Upcoming']
+                      .map<Widget>((String item) {
+                    return Text(item);
+                  }).toList();
+                },
+              ),
+            ),
+            const SizedBox(width: 12),
+            IconButton(
+              icon: const Icon(Icons.search),
+              onPressed: _onSearchIconPressed,
+            ),
+            const Icon(Icons.more_vert, size: 28),
+            const SizedBox(width: 12),
+          ],
+        ),
+        body: Container(
+          color: Theme.of(context).primaryColor,
+          child: Column(
+            children: [
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                child: Row(
+                  children: [
+                    Text(
+                      'Tasks',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
                       ),
-                    );
-                  }).toList(),
-                  onChanged: (String? newValue) {
-                    setState(() {
-                      selectedCategory = newValue!;
-                    });
-                  },
-                  selectedItemBuilder: (BuildContext context) {
-                    return <String>['All', 'Today', 'Upcoming']
-                        .map<Widget>((String item) {
-                      return Text(item);
-                    }).toList();
-                  },
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(width: 12),
-              IconButton(
-                icon: const Icon(Icons.search),
-                onPressed: _onSearchIconPressed,
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: pendingTodos
+                            .map((todo) => _buildDismissibleTodoItem(todo))
+                            .toList(),
+                      ),
+                    ),
+                    if (completedTodos.isNotEmpty) ...[
+                      if (pendingTodos.isNotEmpty) const Divider(thickness: 1),
+                      _buildCompletedTasksSection(completedTodos),
+                    ]
+                  ],
+                ),
               ),
-              const Icon(Icons.more_vert, size: 28),
-              const SizedBox(width: 12),
             ],
           ),
-          body: Container(
-            color: Theme.of(context).primaryColor,
-            child: Column(
-              children: [
-                const Padding(
-                  padding:
-                      EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                  child: Row(
-                    children: [
-                      Text(
-                        'Tasks',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: ListView(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: pendingTodos
-                              .map((todo) => _buildDismissibleTodoItem(todo))
-                              .toList(),
-                        ),
-                      ),
-                      if (completedTodos.isNotEmpty) ...[
-                        if (pendingTodos.isNotEmpty)
-                          const Divider(thickness: 1),
-                        _buildCompletedTasksSection(completedTodos),
-                      ]
-                    ],
-                  ),
+        ),
+        floatingActionButton: GestureDetector(
+          onTap: _addTodo,
+          child: Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.2),
+                  spreadRadius: 2,
+                  blurRadius: 6,
+                  offset: const Offset(0, 3),
                 ),
               ],
             ),
-          ),
-          floatingActionButton: GestureDetector(
-            onTap: _addTodo,
-            child: Container(
-              width: 60,
-              height: 60,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
-                    spreadRadius: 2,
-                    blurRadius: 6,
-                    offset: const Offset(0, 3),
-                  ),
-                ],
-              ),
-              child: Icon(Icons.add,
-                  size: 32, color: Theme.of(context).primaryColor),
-            ),
+            child: Icon(Icons.add,
+                size: 32, color: Theme.of(context).primaryColor),
           ),
         ),
       ),
@@ -416,23 +402,37 @@ class TodoListViewState extends State<TodoListView> {
       onDismissed: (direction) {
         _toggleTodoCompletion(todo);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("${todo.title} moved to completed")),
+          SnackBar(content: Text("${todo.title} completed")),
         );
       },
       background: Container(
         color: Colors.green,
-        alignment: Alignment.centerRight,
-        child: const Padding(
-          padding: EdgeInsets.only(right: 20.0),
-          child: Icon(Icons.check, color: Colors.white),
+        alignment: Alignment.centerLeft, // Align to left for visibility
+        child: Padding(
+          padding: const EdgeInsets.only(left: 20.0), // Place padding on left
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: const [
+              Icon(Icons.check, color: Colors.white),
+              SizedBox(width: 8),
+              Text('Complete', style: TextStyle(color: Colors.white)),
+            ],
+          ),
         ),
       ),
       secondaryBackground: Container(
         color: Colors.red,
-        alignment: Alignment.centerLeft,
-        child: const Padding(
-          padding: EdgeInsets.only(left: 20.0),
-          child: Icon(Icons.delete, color: Colors.white),
+        alignment: Alignment.centerRight, // Align to right for visibility
+        child: Padding(
+          padding: const EdgeInsets.only(right: 20.0), // Place padding on right
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: const [
+              Text('Delete', style: TextStyle(color: Colors.white)),
+              SizedBox(width: 8),
+              Icon(Icons.delete, color: Colors.white),
+            ],
+          ),
         ),
       ),
       child: AnimatedSwitcher(
