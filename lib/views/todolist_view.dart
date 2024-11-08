@@ -126,6 +126,7 @@ class _TodoListTileState extends State<TodoListTile> {
                         onPressed: () {
                           Provider.of<TodoListViewModel>(context, listen: false)
                               .toggleTodoImportance(widget.todo);
+                          setState(() {}); // Refresh the UI
                         },
                       ),
               ),
