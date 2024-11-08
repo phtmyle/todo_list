@@ -369,6 +369,25 @@ class TodoSearchDelegate extends SearchDelegate<Todo?> {
   TodoSearchDelegate(this.viewModel);
 
   @override
+  ThemeData appBarTheme(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return theme.copyWith(
+      appBarTheme: const AppBarTheme(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+      ),
+      inputDecorationTheme: const InputDecorationTheme(
+        hintStyle: TextStyle(color: Colors.grey),
+        border: InputBorder.none,
+      ),
+      textTheme: theme.textTheme.copyWith(
+        headlineSmall:
+            const TextStyle(color: Colors.black), // Search query text color
+      ),
+    );
+  }
+
+  @override
   List<Widget> buildActions(BuildContext context) {
     return [
       IconButton(
@@ -396,20 +415,22 @@ class TodoSearchDelegate extends SearchDelegate<Todo?> {
       return todo.title.toLowerCase().contains(query.toLowerCase());
     }).toList();
 
-    return Container(
-      color: const Color(0xFF5C6BC0),
-      child: ListView.builder(
-        itemCount: results.length,
-        itemBuilder: (context, index) {
-          final todo = results[index];
-          return TodoListTile(
-            todo: todo,
-            onToggleCompletion: (todo) {
-              viewModel.toggleTodoCompletion(todo);
-              close(context, todo);
-            },
-          );
-        },
+    return SafeArea(
+      child: Container(
+        color: const Color(0xFF5C6BC0),
+        child: ListView.builder(
+          itemCount: results.length,
+          itemBuilder: (context, index) {
+            final todo = results[index];
+            return TodoListTile(
+              todo: todo,
+              onToggleCompletion: (todo) {
+                viewModel.toggleTodoCompletion(todo);
+                close(context, todo);
+              },
+            );
+          },
+        ),
       ),
     );
   }
@@ -420,22 +441,23 @@ class TodoSearchDelegate extends SearchDelegate<Todo?> {
       return todo.title.toLowerCase().contains(query.toLowerCase());
     }).toList();
 
-    return Container(
-      color: const Color(0xFF5C6BC0),
-      child: ListView.builder(
-        itemCount: suggestions.length,
-        itemBuilder: (context, index) {
-          final todo = suggestions[index];
-          return TodoListTile(
-            todo: todo,
-            onToggleCompletion: (todo) {
-              viewModel.toggleTodoCompletion(todo);
-              // query = todo.title;
-              query = '';
-              showResults(context);
-            },
-          );
-        },
+    return SafeArea(
+      child: Container(
+        color: const Color(0xFF5C6BC0),
+        child: ListView.builder(
+          itemCount: suggestions.length,
+          itemBuilder: (context, index) {
+            final todo = suggestions[index];
+            return TodoListTile(
+              todo: todo,
+              onToggleCompletion: (todo) {
+                viewModel.toggleTodoCompletion(todo);
+                // query = todo.title;
+                showResults(context);
+              },
+            );
+          },
+        ),
       ),
     );
   }
